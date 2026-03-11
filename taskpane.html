@@ -105,10 +105,13 @@ body{font-family:Arial,sans-serif;font-size:13px;background:#F1F5F9;color:var(--
 .badge-warn{background:var(--amber-lt);color:var(--amber)}
 .badge-off{background:#fee2e2;color:var(--red)}
 .checkbox-check{
-  width:16px;height:16px;border:2px solid var(--border);border-radius:3px;
+  width:18px;height:18px;border:2px solid #CBD5E1;border-radius:4px;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  cursor:pointer;transition:all .15s;background:#fff;user-select:none;
 }
-.vt-card.selected .checkbox-check{background:var(--green);border-color:var(--green);color:#fff}
+.vt-card:hover .checkbox-check{border-color:var(--blue)}
+.vt-card.selected .checkbox-check{background:var(--green);border-color:var(--green);color:#fff;font-size:12px}
+.vt-card.selected{border-left-color:var(--green);background:#f0fdf4;border-color:#86efac}
 
 /* ── MULTI-SELECT TOOLBAR ── */
 #multi-toolbar{
@@ -322,8 +325,10 @@ body{font-family:Arial,sans-serif;font-size:13px;background:#F1F5F9;color:var(--
         <select id="filter-nhom"><option value="">Tất cả nhóm</option></select>
         <select id="filter-brand"><option value="">Tất cả brand</option></select>
       </div>
-      <div class="results-info">Tìm thấy: <span id="result-count">0</span> vật tư
-        &nbsp;|&nbsp; Đã chọn: <span id="selected-count">0</span>
+      <div class="results-info">
+        Tìm thấy: <span id="result-count">0</span> vật tư
+        &nbsp;|&nbsp; Đã chọn: <span id="selected-count" style="color:var(--green);font-weight:700">0</span>
+        &nbsp;<span style="font-size:10px;color:var(--slate-md)">(☑ hoặc Ctrl+Click để chọn nhiều)</span>
       </div>
       <div id="vt-list"><div class="loading"><div class="loading-spinner"></div><br>Đang tải...</div></div>
     </div>
@@ -365,8 +370,9 @@ body{font-family:Arial,sans-serif;font-size:13px;background:#F1F5F9;color:var(--
   <!-- MULTI-SELECT TOOLBAR -->
   <div id="multi-toolbar">
     <span class="sel-count" id="toolbar-count">0 đã chọn</span>
-    <button class="btn-multi btn-multi-primary" id="btn-copy-selected">📋 Copy danh sách</button>
-    <button class="btn-multi btn-multi-green" id="btn-open-multi-panel">📄 Xem & Copy chi tiết</button>
+    <button class="btn-multi btn-multi-primary" id="btn-copy-selected">📋 Copy nhanh</button>
+    <button class="btn-multi btn-multi-green" id="btn-open-multi-panel">📄 Copy chi tiết</button>
+    <button class="btn-multi btn-multi-cancel" id="btn-select-all">☑ Chọn tất cả</button>
     <button class="btn-multi btn-multi-cancel" id="btn-clear-sel">✕ Bỏ chọn</button>
   </div>
 </div>
@@ -604,7 +610,7 @@ function renderSearchTab() {
     return `
     <div class="vt-card${sel?" selected":""}" data-mavt="${v.MaVT}" onclick="onCardClick('${v.MaVT}',event)">
       <div class="vt-header">
-        <div class="checkbox-check">${sel?"✓":""}</div>
+        <div class="checkbox-check" onclick="onCheckboxClick('${v.MaVT}',event)">${sel?"✓":""}</div>
         <span class="vt-code">${v.MaVT}</span>
         <span class="vt-name">${v.TenVT}</span>
         ${v.MaBrand?`<span class="vt-brand">${v.MaBrand}</span>`:""}
@@ -619,14 +625,29 @@ function renderSearchTab() {
   }).join("");
 }
 
-// Click = toggle chọn nếu đang có nhiều, click đơn = mở panel
+// onCheckboxClick — click vào ô vuông = toggle chọn (không mở panel)
+function onCheckboxClick(maVT, event) {
+  event.stopPropagation();
+  toggleSelect(maVT);
+}
+
+// onCardClick — Ctrl+Click hoặc đang có chọn = toggle; Click thường = mở panel
 let clickTimer = null;
 function onCardClick(maVT, event) {
-  if (ST.selected.size > 0) {
-    toggleSelect(maVT); return;
+  // Ctrl+Click hoặc Shift+Click = toggle select
+  if (event.ctrlKey || event.metaKey || event.shiftKey) {
+    event.preventDefault();
+    toggleSelect(maVT);
+    return;
   }
+  // Đang có item được chọn: click thường cũng = toggle
+  if (ST.selected.size > 0) {
+    toggleSelect(maVT);
+    return;
+  }
+  // Click thường = mở panel chi tiết
   clearTimeout(clickTimer);
-  clickTimer = setTimeout(() => openSinglePanel(maVT), 200);
+  clickTimer = setTimeout(() => openSinglePanel(maVT), 150);
 }
 
 function toggleSelect(maVT) {
@@ -651,6 +672,13 @@ function updateMultiToolbar() {
 
 function clearSelection() {
   ST.selected.clear();
+  updateMultiToolbar();
+  renderSearchTab();
+}
+
+function selectAllVisible() {
+  const list = getFilteredVatTu();
+  list.forEach(v => ST.selected.add(v.MaVT));
   updateMultiToolbar();
   renderSearchTab();
 }
@@ -1021,6 +1049,7 @@ window.addEventListener("DOMContentLoaded", () => {
   // Multi toolbar
   document.getElementById("btn-copy-selected").addEventListener("click", copySelectedList);
   document.getElementById("btn-open-multi-panel").addEventListener("click", openMultiPanel);
+  document.getElementById("btn-select-all").addEventListener("click", selectAllVisible);
   document.getElementById("btn-clear-sel").addEventListener("click", clearSelection);
 
   // Close panel
