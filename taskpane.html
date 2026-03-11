@@ -2,594 +2,1072 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vật Tư — Tra Cứu Nhanh</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Mulish:wght@300;400;500;600&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VậtTư.DB v2</title>
 <style>
-:root {
-  --bg:        #f0f2f5;
-  --surface:   #ffffff;
-  --surface2:  #f8f9fb;
-  --border:    #e4e7ec;
-  --border2:   #cbd2da;
-  --ink:       #111827;
-  --muted:     #6b7280;
-  --faint:     #9ca3af;
-  --accent:    #1d4ed8;
-  --accent-lt: #eff4ff;
-  --accent-md: #bfdbfe;
-  --green:     #059669;
-  --green-lt:  #ecfdf5;
-  --amber:     #d97706;
-  --amber-lt:  #fffbeb;
-  --red:       #dc2626;
-  --copy-ok:   #065f46;
-  --copy-bg:   #d1fae5;
-  --font:      'Mulish', sans-serif;
-  --head:      'Syne', sans-serif;
-  --mono:      'DM Mono', monospace;
-  --r:         8px;
-  --shadow:    0 1px 3px rgba(0,0,0,.08);
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#1D4ED8;--blue-lt:#EFF4FF;--blue-md:#BFDBFE;
+  --green:#059669;--green-lt:#ECFDF5;
+  --amber:#D97706;--amber-lt:#FFFBEB;
+  --red:#DC2626;--red-lt:#FEF2F2;
+  --slate:#1E293B;--slate-md:#475569;--slate-lt:#F8FAFC;
+  --gray:#F1F5F9;--border:#E2E8F0;--white:#fff;
+  --radius:8px;--shadow:0 1px 4px rgba(0,0,0,.12);
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 13px; }
-body { font-family: var(--font); background: var(--bg); color: var(--ink); min-height: 100vh; display: flex; flex-direction: column; }
+body{font-family:Arial,sans-serif;font-size:13px;background:#F1F5F9;color:var(--slate)}
 
-/* HEADER */
-.header { background: var(--accent); padding: 11px 14px 10px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.logo { font-family: var(--head); font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -0.5px; line-height: 1; }
-.logo span { opacity: .55; font-weight: 400; }
-.header-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
-.conn-badge { display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,.15); border-radius: 20px; padding: 3px 9px; font-size: 10px; color: rgba(255,255,255,.9); font-family: var(--mono); }
-.conn-dot { width: 6px; height: 6px; border-radius: 50%; background: #6ee7b7; flex-shrink: 0; animation: pulse 2s infinite; }
-.conn-dot.off { background: #fca5a5; animation: none; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+/* ── HEADER ── */
+#app-header{
+  background:linear-gradient(135deg,var(--blue),#1e40af);
+  color:#fff;padding:10px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+#app-header .logo{font-weight:700;font-size:15px;letter-spacing:.5px}
+#app-header .logo span{color:#93c5fd}
+#user-info{font-size:11px;color:#bfdbfe;text-align:right;line-height:1.4}
+#user-info strong{color:#fff}
+#btn-logout{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  color:#fff;padding:3px 9px;border-radius:5px;cursor:pointer;font-size:11px;margin-top:3px}
+#btn-logout:hover{background:rgba(255,255,255,.25)}
 
-/* TABS */
-.tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.tab { flex: 1; padding: 9px 4px; font-size: 11px; font-weight: 700; text-align: center; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; text-transform: uppercase; letter-spacing: .6px; font-family: var(--head); }
-.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-.tab:hover:not(.active) { color: var(--ink); background: var(--bg); }
+/* ── LOGIN SCREEN ── */
+#login-screen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#1e3a5f,#1D4ED8);
+}
+.login-box{
+  background:#fff;border-radius:14px;padding:32px 28px;width:320px;
+  box-shadow:0 8px 32px rgba(0,0,0,.25);
+}
+.login-box h2{text-align:center;color:var(--blue);margin-bottom:6px;font-size:18px}
+.login-box p{text-align:center;color:var(--slate-md);font-size:12px;margin-bottom:20px}
+.login-box input{
+  width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:7px;
+  font-size:13px;margin-bottom:12px;outline:none;transition:border .2s;
+}
+.login-box input:focus{border-color:var(--blue)}
+#btn-login{
+  width:100%;padding:10px;background:var(--blue);color:#fff;
+  border:none;border-radius:7px;font-size:14px;font-weight:700;
+  cursor:pointer;transition:background .2s;
+}
+#btn-login:hover{background:#1e40af}
+#login-error{color:var(--red);font-size:12px;text-align:center;margin-top:8px;min-height:18px}
 
-/* BODY */
-.body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-.panel { display: none; flex: 1; flex-direction: column; }
-.panel.active { display: flex; }
+/* ── TABS ── */
+#tabs{
+  display:flex;background:#fff;border-bottom:2px solid var(--border);
+  position:sticky;top:52px;z-index:90;overflow-x:auto;
+}
+.tab-btn{
+  padding:10px 14px;border:none;background:none;color:var(--slate-md);
+  cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;
+  border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;
+}
+.tab-btn:hover{color:var(--blue);background:var(--blue-lt)}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue);background:var(--blue-lt)}
 
-/* SEARCH */
-.search-area { padding: 10px 12px 0; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.search-row { display: flex; gap: 6px; margin-bottom: 8px; }
-.search-wrap { position: relative; flex: 1; }
-.search-wrap input { width: 100%; padding: 8px 34px 8px 10px; border: 1.5px solid var(--border2); border-radius: var(--r); font-size: 12.5px; font-family: var(--font); background: var(--surface2); outline: none; color: var(--ink); transition: border-color .2s, box-shadow .2s; }
-.search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(29,78,216,.1); background: var(--surface); }
-.search-wrap input::placeholder { color: var(--faint); }
-.search-go { position: absolute; right: 0; top: 0; bottom: 0; width: 34px; display: flex; align-items: center; justify-content: center; color: var(--muted); cursor: pointer; font-size: 14px; border-radius: 0 var(--r) var(--r) 0; transition: color .15s; }
-.search-go:hover { color: var(--accent); }
-.filter-row { display: flex; gap: 6px; padding-bottom: 8px; }
-.filter-row select { flex: 1; padding: 5px 7px; border: 1px solid var(--border2); border-radius: 6px; font-size: 11.5px; font-family: var(--font); outline: none; background: var(--surface2); color: var(--ink); cursor: pointer; }
-.filter-row select:focus { border-color: var(--accent); }
+/* ── MAIN CONTENT ── */
+#main-content{padding:12px;max-width:100%}
+.tab-panel{display:none}.tab-panel.active{display:block}
 
-/* META */
-.result-meta { padding: 6px 12px; font-size: 11px; color: var(--muted); display: none; align-items: center; justify-content: space-between; background: var(--surface2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.result-meta.show { display: flex; }
-.meta-count { font-family: var(--mono); font-weight: 500; color: var(--accent); }
+/* ── SEARCH BOX ── */
+.search-row{display:flex;gap:6px;margin-bottom:10px}
+.search-row input,.search-row select{
+  padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius);
+  font-size:13px;outline:none;transition:border .2s;background:#fff;
+}
+.search-row input{flex:1}.search-row input:focus{border-color:var(--blue)}
+.search-row select{min-width:120px}
+.results-info{font-size:11px;color:var(--slate-md);margin-bottom:8px}
+.results-info span{color:var(--blue);font-weight:700}
 
-/* RESULT LIST */
-.result-list { flex: 1; overflow-y: auto; padding: 8px 10px; display: flex; flex-direction: column; gap: 7px; }
-.result-list::-webkit-scrollbar { width: 4px; }
-.result-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+/* ── VẬT TƯ CARD ── */
+.vt-card{
+  background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+  padding:10px 12px;margin-bottom:7px;cursor:pointer;transition:all .2s;
+  border-left:3px solid var(--blue);
+}
+.vt-card:hover{border-color:var(--blue);box-shadow:var(--shadow);transform:translateX(2px)}
+.vt-card.selected{border-left-color:var(--green);background:var(--green-lt)}
+.vt-card .vt-header{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.vt-code{font-weight:700;color:var(--blue);font-size:12px;
+  background:var(--blue-lt);padding:2px 7px;border-radius:4px}
+.vt-name{font-weight:600;color:var(--slate);flex:1;font-size:13px}
+.vt-brand{font-size:10px;color:var(--slate-md);
+  background:var(--gray);padding:1px 6px;border-radius:3px}
+.vt-meta{font-size:11px;color:var(--slate-md);display:flex;gap:10px;flex-wrap:wrap}
+.vt-meta span{display:flex;align-items:center;gap:3px}
+.badge{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:600}
+.badge-ok{background:var(--green-lt);color:var(--green)}
+.badge-warn{background:var(--amber-lt);color:var(--amber)}
+.badge-off{background:#fee2e2;color:var(--red)}
+.checkbox-check{
+  width:16px;height:16px;border:2px solid var(--border);border-radius:3px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.vt-card.selected .checkbox-check{background:var(--green);border-color:var(--green);color:#fff}
 
-/* VT CARD */
-.vt-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; transition: border-color .15s; }
-.vt-card:hover { border-color: var(--accent-md); }
-.card-top { padding: 9px 10px 7px; cursor: pointer; display: flex; align-items: flex-start; gap: 8px; transition: background .1s; }
-.card-top:hover { background: var(--accent-lt); }
-.card-main { flex: 1; min-width: 0; }
-.card-code { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--accent); margin-bottom: 3px; }
-.card-name { font-size: 12.5px; font-weight: 600; color: var(--ink); line-height: 1.35; margin-bottom: 4px; }
-.card-tags { display: flex; gap: 4px; flex-wrap: wrap; }
-.tag { font-size: 10px; padding: 1px 6px; border-radius: 4px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); font-family: var(--mono); }
-.card-toggle { width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--muted); transition: transform .2s, color .15s; }
-.vt-card.open .card-toggle { transform: rotate(180deg); color: var(--accent); }
+/* ── MULTI-SELECT TOOLBAR ── */
+#multi-toolbar{
+  display:none;position:sticky;bottom:0;background:#1e3a5f;color:#fff;
+  padding:10px 12px;border-top:2px solid var(--blue);z-index:95;
+}
+#multi-toolbar.show{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#multi-toolbar .sel-count{font-weight:700;font-size:13px;flex:1}
+.btn-multi{
+  padding:6px 12px;border:none;border-radius:6px;cursor:pointer;
+  font-size:12px;font-weight:600;
+}
+.btn-multi-primary{background:var(--blue);color:#fff}
+.btn-multi-primary:hover{background:#1e40af}
+.btn-multi-green{background:var(--green);color:#fff}
+.btn-multi-green:hover{background:#047857}
+.btn-multi-cancel{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)}
 
-/* COPY PANEL */
-.copy-panel { display: none; border-top: 1px solid var(--border); background: var(--surface2); }
-.vt-card.open .copy-panel { display: block; }
-.copy-section { padding: 8px 10px; border-bottom: 1px dashed var(--border); }
-.copy-section:last-child { border-bottom: none; }
-.copy-section-title { font-size: 10px; font-weight: 700; color: var(--faint); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px; }
-.copy-fields { display: flex; flex-direction: column; gap: 4px; }
-.copy-row { display: flex; align-items: center; gap: 6px; padding: 4px 7px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; transition: border-color .1s; }
-.copy-row:hover { border-color: var(--accent-md); }
-.copy-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; width: 64px; flex-shrink: 0; }
-.copy-value { flex: 1; font-size: 12px; font-family: var(--mono); color: var(--ink); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.copy-value.price { color: var(--green); }
-.copy-value.code { color: var(--accent); }
-.copy-btn { padding: 3px 8px; border: 1px solid var(--border2); border-radius: 5px; background: var(--surface); font-size: 10px; font-weight: 700; cursor: pointer; color: var(--muted); font-family: var(--font); transition: all .1s; white-space: nowrap; flex-shrink: 0; }
-.copy-btn:hover { background: var(--accent-lt); border-color: var(--accent-md); color: var(--accent); }
-.copy-btn.copied { background: var(--copy-bg); border-color: #6ee7b7; color: var(--copy-ok); }
+/* ── COPY PANEL ── */
+#copy-panel{
+  display:none;position:fixed;top:0;right:0;width:340px;height:100vh;
+  background:#fff;box-shadow:-4px 0 20px rgba(0,0,0,.15);z-index:200;
+  overflow-y:auto;padding:0;
+}
+#copy-panel.show{display:flex;flex-direction:column}
+#copy-panel-header{
+  background:linear-gradient(135deg,var(--green),#047857);
+  color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;
+}
+#copy-panel-header h3{font-size:13px}
+#btn-close-panel{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:0 4px}
+#copy-panel-body{padding:12px;flex:1;overflow-y:auto}
 
-/* COPY ALL */
-.copy-all-row { padding: 8px 10px; border-top: 1px solid var(--border); display: flex; gap: 5px; flex-wrap: wrap; background: var(--surface); }
-.copy-all-btn { flex: 1; min-width: 0; padding: 6px 8px; border: none; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: var(--head); letter-spacing: .3px; transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 4px; }
-.btn-row { background: var(--accent); color: white; }
-.btn-row:hover { filter: brightness(1.1); }
-.btn-price { background: var(--green-lt); color: var(--green); border: 1px solid #a7f3d0 !important; }
-.btn-price:hover { background: #bbf7d0; }
-.btn-baogia { background: var(--amber-lt); color: var(--amber); border: 1px solid #fcd34d !important; }
-.btn-baogia:hover { background: #fef3c7; }
-.copy-all-btn.copied { background: var(--copy-bg) !important; color: var(--copy-ok) !important; border-color: #6ee7b7 !important; }
+/* Single item detail */
+.detail-row{display:flex;border-bottom:1px solid var(--border);padding:6px 0}
+.detail-label{width:100px;font-size:11px;color:var(--slate-md);flex-shrink:0;font-weight:600}
+.detail-value{flex:1;font-size:12px;color:var(--slate);font-weight:500}
+.btn-copy-field{
+  background:var(--blue-lt);color:var(--blue);border:none;border-radius:4px;
+  padding:2px 7px;font-size:10px;cursor:pointer;margin-left:6px;flex-shrink:0;
+}
+.btn-copy-field:hover{background:var(--blue-md)}
 
-/* CLIPBOARD BAR */
-.clipboard-bar { position: fixed; top: 56px; left: 0; right: 0; background: var(--copy-bg); border-bottom: 1px solid #6ee7b7; padding: 7px 14px; font-size: 11px; font-weight: 600; color: var(--copy-ok); display: none; align-items: center; gap: 7px; z-index: 300; font-family: var(--mono); animation: slideDown .2s ease; }
-.clipboard-bar.show { display: flex; }
-@keyframes slideDown { from{transform:translateY(-8px);opacity:0} to{transform:none;opacity:1} }
-.clip-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Multi-item copy panel */
+.multi-item-row{
+  background:var(--slate-lt);border-radius:6px;padding:8px 10px;margin-bottom:6px;
+  border-left:3px solid var(--blue);
+}
+.multi-item-row .mi-code{font-weight:700;color:var(--blue);font-size:11px}
+.multi-item-row .mi-name{font-size:12px;color:var(--slate);margin:2px 0}
+.multi-item-row .mi-meta{font-size:11px;color:var(--slate-md)}
 
-/* EMPTY / SPINNER */
-.empty { text-align: center; padding: 32px 16px; color: var(--muted); }
-.empty-icon { font-size: 30px; margin-bottom: 10px; opacity: .35; }
-.empty-text { font-size: 12px; }
-.spinner { width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; margin: 28px auto; }
-@keyframes spin { to { transform: rotate(360deg); } }
+/* Preset section */
+.section-title{
+  font-size:11px;font-weight:700;color:var(--slate-md);
+  text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px;
+}
+.preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px}
+.btn-preset{
+  padding:7px 8px;border:1.5px solid var(--border);border-radius:6px;
+  background:#fff;cursor:pointer;text-align:left;transition:all .2s;
+}
+.btn-preset:hover,.btn-preset.active{border-color:var(--blue);background:var(--blue-lt)}
+.btn-preset .preset-name{font-weight:700;font-size:12px;color:var(--slate)}
+.btn-preset .preset-desc{font-size:10px;color:var(--slate-md);margin-top:1px}
+.btn-preset-add{
+  grid-column:1/-1;padding:6px;border:1.5px dashed var(--border);border-radius:6px;
+  background:none;cursor:pointer;color:var(--slate-md);font-size:11px;
+}
+.btn-preset-add:hover{border-color:var(--blue);color:var(--blue)}
 
-/* TỒN KHO */
-.tk-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r); padding: 9px 10px; box-shadow: var(--shadow); }
-.tk-top { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
-.tk-code { font-family: var(--mono); font-size: 11px; color: var(--accent); font-weight: 500; }
-.tk-name { font-size: 12px; font-weight: 600; flex: 1; }
-.tk-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
-.tk-lbl { font-size: 9px; color: var(--faint); text-transform: uppercase; letter-spacing: .6px; }
-.tk-val { font-family: var(--mono); font-size: 12px; font-weight: 600; margin-top: 1px; }
-.tk-warn { color: var(--red); font-size: 10px; font-weight: 700; margin-top: 5px; }
+/* Cột xuất */
+.col-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px}
+.col-check{
+  display:flex;align-items:center;gap:6px;padding:5px 7px;
+  border:1px solid var(--border);border-radius:5px;background:#fff;cursor:pointer;
+}
+.col-check:hover{border-color:var(--blue);background:var(--blue-lt)}
+.col-check input{cursor:pointer;accent-color:var(--blue)}
+.col-check span{font-size:11px;color:var(--slate)}
 
-/* SETTINGS */
-.settings-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; }
-.s-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px; }
-.s-title { font-family: var(--head); font-size: 12px; font-weight: 700; color: var(--ink); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-.fg { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
-.fg:last-child { margin-bottom: 0; }
-.fg label { font-size: 11px; font-weight: 700; color: var(--muted); }
-.fg input, .fg select { padding: 7px 9px; border: 1.5px solid var(--border2); border-radius: 6px; font-size: 12px; font-family: var(--font); outline: none; background: var(--surface2); color: var(--ink); transition: border-color .2s; }
-.fg input:focus, .fg select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(29,78,216,.1); }
-.fg .hint { font-size: 10px; color: var(--faint); margin-top: 2px; line-height: 1.4; }
-.col-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 6px; }
-.col-item { display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer; padding: 4px 6px; border-radius: 5px; border: 1px solid var(--border); background: var(--surface2); transition: all .1s; }
-.col-item:hover { border-color: var(--accent-md); background: var(--accent-lt); }
-.col-item input { accent-color: var(--accent); }
-.preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-.preset-btn { padding: 7px 8px; border: 1.5px solid var(--border); border-radius: 6px; background: var(--surface2); font-size: 11px; font-weight: 600; cursor: pointer; text-align: left; color: var(--muted); font-family: var(--font); transition: all .1s; line-height: 1.3; }
-.preset-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); }
-.preset-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); }
-.preset-btn small { display: block; font-size: 9px; font-weight: 400; color: var(--faint); margin-top: 1px; }
-.save-btn { width: 100%; padding: 9px; background: var(--accent); border: none; border-radius: 7px; color: white; font-size: 12px; font-weight: 700; font-family: var(--head); cursor: pointer; letter-spacing: .4px; transition: filter .15s; }
-.save-btn:hover { filter: brightness(1.1); }
+/* Big copy button */
+.btn-copy-big{
+  width:100%;padding:11px;background:var(--green);color:#fff;
+  border:none;border-radius:8px;font-size:14px;font-weight:700;
+  cursor:pointer;transition:background .2s;margin-top:6px;
+}
+.btn-copy-big:hover{background:#047857}
+.btn-copy-big.amber{background:var(--amber)}
+.btn-copy-big.amber:hover{background:#b45309}
 
-/* HINT */
-.workflow-hint { margin: 0 10px 8px; padding: 8px 10px; background: var(--amber-lt); border: 1px solid #fcd34d; border-radius: 7px; font-size: 11px; color: var(--amber); line-height: 1.5; flex-shrink: 0; }
-.shortcut { display: inline-block; padding: 1px 5px; border-radius: 3px; background: var(--bg); border: 1px solid var(--border2); font-family: var(--mono); font-size: 10px; color: var(--muted); }
+/* Clipboard toast */
+#clipboard-toast{
+  display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+  background:var(--slate);color:#fff;padding:8px 18px;border-radius:20px;
+  font-size:12px;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.3);
+  white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis;
+}
+#clipboard-toast.show{display:block}
+
+/* ── TỒN KHO TAB ── */
+.tk-card{
+  background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+  padding:10px 12px;margin-bottom:7px;border-left:3px solid var(--slate-md);
+}
+.tk-card.ok{border-left-color:var(--green)}
+.tk-card.warn{border-left-color:var(--amber)}
+.tk-card.danger{border-left-color:var(--red)}
+.tk-header{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.tk-bars{display:flex;gap:12px;font-size:11px;color:var(--slate-md);flex-wrap:wrap}
+.tk-bar{display:flex;align-items:center;gap:4px}
+.tk-bar .num{font-weight:700;color:var(--slate)}
+
+/* ── PRESET EDITOR MODAL ── */
+#preset-modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;
+  align-items:center;justify-content:center;
+}
+#preset-modal.show{display:flex}
+.modal-box{
+  background:#fff;border-radius:12px;padding:20px;width:340px;
+  max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.3);
+}
+.modal-box h3{font-size:14px;color:var(--slate);margin-bottom:14px}
+.modal-input{
+  width:100%;padding:8px 10px;border:1.5px solid var(--border);
+  border-radius:6px;font-size:13px;margin-bottom:8px;outline:none;
+}
+.modal-input:focus{border-color:var(--blue)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.btn-sm{padding:6px 14px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
+.btn-sm-primary{background:var(--blue);color:#fff}
+.btn-sm-cancel{background:var(--gray);color:var(--slate-md)}
+.preset-list-item{
+  display:flex;align-items:center;gap:6px;padding:6px 8px;
+  border:1px solid var(--border);border-radius:6px;margin-bottom:5px;
+}
+.preset-list-item .pli-name{flex:1;font-size:12px;font-weight:600}
+.preset-list-item .pli-desc{font-size:10px;color:var(--slate-md)}
+.btn-pli-del{background:var(--red-lt);color:var(--red);border:none;border-radius:4px;
+  padding:2px 7px;cursor:pointer;font-size:11px}
+.btn-pli-edit{background:var(--blue-lt);color:var(--blue);border:none;border-radius:4px;
+  padding:2px 7px;cursor:pointer;font-size:11px}
+
+/* ── SETUP TAB ── */
+.setup-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.setup-card h4{font-size:12px;font-weight:700;color:var(--slate);margin-bottom:10px;
+  display:flex;align-items:center;gap:6px}
+.setup-input{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;
+  font-size:12px;margin-bottom:8px;outline:none;}
+.setup-input:focus{border-color:var(--blue)}
+.btn-setup{width:100%;padding:9px;background:var(--blue);color:#fff;border:none;
+  border-radius:7px;font-weight:700;cursor:pointer;font-size:13px;}
+.btn-setup:hover{background:#1e40af}
+.conn-status{font-size:11px;padding:5px 10px;border-radius:5px;margin-top:6px;text-align:center}
+.conn-ok{background:var(--green-lt);color:var(--green)}
+.conn-err{background:var(--red-lt);color:var(--red)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}
+
+/* Loading */
+.loading{text-align:center;padding:30px;color:var(--slate-md)}
+.loading-spinner{display:inline-block;width:24px;height:24px;
+  border:3px solid var(--border);border-top-color:var(--blue);
+  border-radius:50%;animation:spin .8s linear infinite;margin-bottom:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:40px 20px;color:var(--slate-md)}
+.empty-icon{font-size:36px;margin-bottom:10px}
 </style>
 </head>
 <body>
 
-<div class="clipboard-bar" id="clip-bar">
-  <span>📋</span>
-  <span class="clip-text" id="clip-text">Đã copy!</span>
-  <span style="font-size:11px;opacity:.7">→ Ctrl+V vào Excel</span>
-</div>
-
-<div class="header">
-  <div class="logo">Vật<span>Tư</span>.DB</div>
-  <div class="header-right">
-    <div class="conn-badge">
-      <div class="conn-dot off" id="conn-dot"></div>
-      <span id="conn-text">...</span>
-    </div>
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h2>📦 VậtTư.DB</h2>
+    <p>Đăng nhập để sử dụng hệ thống</p>
+    <input id="login-email" type="email" placeholder="Email công ty" autocomplete="email">
+    <input id="login-pass" type="password" placeholder="Mật khẩu">
+    <button id="btn-login">🔐 Đăng nhập</button>
+    <div id="login-error"></div>
   </div>
 </div>
 
-<div class="tabs">
-  <div class="tab active" onclick="switchTab('search',this)">🔍 Tìm kiếm</div>
-  <div class="tab" onclick="switchTab('tonkho',this)">📦 Tồn kho</div>
-  <div class="tab" onclick="switchTab('settings',this)">⚙ Setup</div>
-</div>
+<!-- MAIN APP -->
+<div id="main-app" style="display:none">
+  <div id="app-header">
+    <div class="logo">Vật<span>Tư</span>.DB <span style="font-size:10px;opacity:.7">v2</span></div>
+    <div id="user-info">
+      <strong id="user-name">---</strong><br>
+      <span id="user-role">---</span>
+      <br><button id="btn-logout">Đăng xuất</button>
+    </div>
+  </div>
 
-<div class="body">
+  <div id="tabs">
+    <button class="tab-btn active" data-tab="search">🔍 Tìm Kiếm</button>
+    <button class="tab-btn" data-tab="tonkho">📦 Tồn Kho</button>
+    <button class="tab-btn" data-tab="setup">⚙️ Setup</button>
+  </div>
 
-  <!-- TAB TÌM KIẾM -->
-  <div id="tab-search" class="panel active">
-    <div class="search-area">
+  <div id="main-content">
+
+    <!-- TÌM KIẾM -->
+    <div class="tab-panel active" id="tab-search">
       <div class="search-row">
-        <div class="search-wrap">
-          <input type="text" id="q" placeholder="Mã, tên, brand, quy cách..."
-            oninput="debounceSearch()" onkeydown="if(event.key==='Enter')doSearch()">
-          <div class="search-go" onclick="doSearch()">↵</div>
-        </div>
+        <input id="search-input" placeholder="Mã, tên, brand, quy cách..." autocomplete="off">
+        <select id="filter-nhom"><option value="">Tất cả nhóm</option></select>
+        <select id="filter-brand"><option value="">Tất cả brand</option></select>
       </div>
-      <div class="filter-row">
-        <select id="f-nhom" onchange="doSearch()"><option value="">Tất cả nhóm</option></select>
-        <select id="f-brand" onchange="doSearch()"><option value="">Tất cả brand</option></select>
+      <div class="results-info">Tìm thấy: <span id="result-count">0</span> vật tư
+        &nbsp;|&nbsp; Đã chọn: <span id="selected-count">0</span>
       </div>
+      <div id="vt-list"><div class="loading"><div class="loading-spinner"></div><br>Đang tải...</div></div>
     </div>
 
-    <div class="workflow-hint" id="workflow-hint">
-      <strong>💡 Cách dùng:</strong> Tìm vật tư → Click card để mở →
-      Nhấn <strong>📋 Copy</strong> từng trường hoặc <strong>Copy cả hàng</strong> →
-      Qua Excel nhấn <span class="shortcut">Ctrl+V</span>
+    <!-- TỒN KHO -->
+    <div class="tab-panel" id="tab-tonkho">
+      <div class="search-row">
+        <input id="tk-search" placeholder="Tìm mã, tên, kho...">
+        <select id="tk-filter-store"><option value="">Tất cả kho</option></select>
+      </div>
+      <div id="tk-list"><div class="loading"><div class="loading-spinner"></div><br>Đang tải...</div></div>
     </div>
 
-    <div class="result-meta" id="result-meta">
-      <span>Tìm thấy: <span class="meta-count" id="r-count">0</span></span>
-      <span style="font-size:10px;color:var(--faint)">Click card → Copy → Paste Excel</span>
-    </div>
-
-    <div class="result-list" id="result-list">
-      <div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">Gõ từ khóa để tìm vật tư</div></div>
-    </div>
-  </div>
-
-  <!-- TAB TỒN KHO -->
-  <div id="tab-tonkho" class="panel" style="overflow-y:auto">
-    <div style="padding:8px 10px 0">
-      <div class="search-wrap" style="margin-bottom:8px">
-        <input type="text" id="tk-q" placeholder="Tìm mã, tên..." oninput="filterTK()">
-        <div class="search-go">↵</div>
-      </div>
-    </div>
-    <div class="result-list" id="tk-list" style="padding-top:4px"><div class="spinner"></div></div>
-  </div>
-
-  <!-- TAB SETTINGS -->
-  <div id="tab-settings" class="panel">
-    <div class="settings-body">
-
-      <div class="s-card">
-        <div class="s-title">🔗 Kết nối Google Sheet</div>
-        <div class="fg">
-          <label>Web App URL (Apps Script)</label>
-          <input id="cfg-url" placeholder="https://script.google.com/macros/s/.../exec">
-          <div class="hint">Lấy từ: Apps Script → Deploy → Web App → Copy URL</div>
-        </div>
-        <button class="save-btn" onclick="saveAndLoad()">🔄 Lưu & Kết nối ngay</button>
+    <!-- SETUP -->
+    <div class="tab-panel" id="tab-setup">
+      <div class="setup-card">
+        <h4>🔗 Kết nối Google Sheet</h4>
+        <input id="setup-url" class="setup-input" placeholder="https://script.google.com/macros/s/.../exec">
+        <small style="color:var(--slate-md);font-size:11px">Lấy từ Apps Script → Deploy → Web App → Copy URL</small>
+        <br><br>
+        <button class="btn-setup" id="btn-save-url">💾 Lưu & Kết nối</button>
+        <div id="conn-status" class="conn-status" style="display:none"></div>
       </div>
 
-      <div class="s-card">
-        <div class="s-title">📋 Preset Copy nhanh</div>
-        <div class="preset-grid">
-          <button class="preset-btn active" id="p-baogia" onclick="setPreset('baogia',this)">
-            Báo giá <small>Mã·Tên·QC·ĐVT·Giá bán·NC</small>
-          </button>
-          <button class="preset-btn" id="p-dutoan" onclick="setPreset('dutoan',this)">
-            Dự toán <small>Mã·Tên·ĐVT·Giá nhập·Bán·NC</small>
-          </button>
-          <button class="preset-btn" id="p-nhanh" onclick="setPreset('nhanh',this)">
-            Giá nhanh <small>Mã · Tên · Giá bán</small>
-          </button>
-          <button class="preset-btn" id="p-full" onclick="setPreset('full',this)">
-            Đầy đủ <small>Tất cả trường</small>
-          </button>
-        </div>
+      <div class="setup-card">
+        <h4>📋 Quản lý Preset Copy</h4>
+        <div id="preset-manager-list"></div>
+        <button class="btn-preset-add" id="btn-add-preset" style="width:100%;margin-top:6px">+ Thêm preset mới</button>
       </div>
 
-      <div class="s-card">
-        <div class="s-title">🗂 Chọn cột xuất</div>
-        <div class="col-grid" id="col-grid">
-          <label class="col-item"><input type="checkbox" value="MaVT" checked> Mã VT</label>
-          <label class="col-item"><input type="checkbox" value="TenVT" checked> Tên VT</label>
-          <label class="col-item"><input type="checkbox" value="QuyCach" checked> Quy Cách</label>
-          <label class="col-item"><input type="checkbox" value="DVT" checked> ĐVT</label>
-          <label class="col-item"><input type="checkbox" value="Brand"> Brand</label>
-          <label class="col-item"><input type="checkbox" value="NhomHang"> Nhóm HH</label>
-          <label class="col-item"><input type="checkbox" value="GiaNhap"> Giá Nhập</label>
-          <label class="col-item"><input type="checkbox" value="GiaBan" checked> Giá Bán</label>
-          <label class="col-item"><input type="checkbox" value="NhanCong" checked> Nhân Công</label>
-          <label class="col-item"><input type="checkbox" value="MaNCC"> Mã NCC</label>
-          <label class="col-item"><input type="checkbox" value="GhiChu"> Ghi Chú</label>
-        </div>
-        <div class="fg" style="margin-top:10px">
-          <label>Phân cách khi copy hàng</label>
-          <select id="cfg-sep">
-            <option value="tab">Tab — dán vào nhiều ô Excel (khuyên dùng)</option>
-            <option value="comma">Dấu phẩy (CSV)</option>
-            <option value="pipe">Dấu | (pipe)</option>
-          </select>
-          <div class="hint">Dùng <strong>Tab</strong>: paste vào Excel tự nhảy sang ô tiếp theo ✅</div>
-        </div>
-        <button class="save-btn" onclick="saveCols()">💾 Lưu cấu hình cột</button>
+      <div class="setup-card">
+        <h4>🗂️ Chọn cột mặc định</h4>
+        <div id="col-selector" class="col-grid"></div>
+        <button class="btn-setup" id="btn-save-cols" style="margin-top:4px">💾 Lưu cấu hình cột</button>
       </div>
-
-      <div class="s-card">
-        <div class="s-title">⌨️ Phím tắt</div>
-        <div style="font-size:11px;color:var(--muted);line-height:2">
-          <span class="shortcut">Enter</span> Tìm kiếm &nbsp;
-          <span class="shortcut">Ctrl+V</span> Dán vào Excel
-        </div>
-      </div>
-
     </div>
   </div>
 
+  <!-- MULTI-SELECT TOOLBAR -->
+  <div id="multi-toolbar">
+    <span class="sel-count" id="toolbar-count">0 đã chọn</span>
+    <button class="btn-multi btn-multi-primary" id="btn-copy-selected">📋 Copy danh sách</button>
+    <button class="btn-multi btn-multi-green" id="btn-open-multi-panel">📄 Xem & Copy chi tiết</button>
+    <button class="btn-multi btn-multi-cancel" id="btn-clear-sel">✕ Bỏ chọn</button>
+  </div>
 </div>
+
+<!-- COPY PANEL -->
+<div id="copy-panel">
+  <div id="copy-panel-header">
+    <h3 id="copy-panel-title">Chi tiết vật tư</h3>
+    <button id="btn-close-panel">✕</button>
+  </div>
+  <div id="copy-panel-body"></div>
+</div>
+
+<!-- PRESET MODAL -->
+<div id="preset-modal">
+  <div class="modal-box">
+    <h3 id="preset-modal-title">Thêm Preset Mới</h3>
+    <input id="preset-name-input" class="modal-input" placeholder="Tên preset (VD: Báo giá)">
+    <input id="preset-desc-input" class="modal-input" placeholder="Mô tả ngắn (VD: Mã·Tên·ĐVT·Giá)">
+    <div style="font-size:11px;color:var(--slate-md);margin-bottom:6px">Chọn cột (theo thứ tự):</div>
+    <div id="preset-col-selector" class="col-grid"></div>
+    <div class="modal-actions">
+      <button class="btn-sm btn-sm-cancel" id="btn-preset-cancel">Hủy</button>
+      <button class="btn-sm btn-sm-primary" id="btn-preset-save">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIPBOARD TOAST -->
+<div id="clipboard-toast">✓ Đã copy!</div>
 
 <script>
-// ============================================================
-// CONSTANTS
-// ============================================================
-const PRESETS = {
-  baogia: ['MaVT','TenVT','QuyCach','DVT','GiaBan','NhanCong'],
-  dutoan: ['MaVT','TenVT','DVT','GiaNhap','GiaBan','NhanCong'],
-  nhanh:  ['MaVT','TenVT','GiaBan'],
-  full:   ['MaVT','TenVT','QuyCach','DVT','Brand','NhomHang','GiaNhap','GiaBan','NhanCong','MaNCC','GhiChu'],
-};
-const LABELS = {
-  MaVT:'Mã VT', TenVT:'Tên VT', QuyCach:'Quy Cách', DVT:'ĐVT',
-  Brand:'Brand', NhomHang:'Nhóm', GiaNhap:'Giá nhập',
-  GiaBan:'Giá bán', NhanCong:'Nhân công', MaNCC:'Mã NCC', GhiChu:'Ghi chú',
-};
-const PRICE_KEYS = ['GiaNhap','GiaBan','NhanCong'];
-
-// ============================================================
+// ════════════════════════════════════════════════════════
 // STATE
-// ============================================================
-let CFG = { url:'', cols:['MaVT','TenVT','QuyCach','DVT','GiaBan','NhanCong'], preset:'baogia', sep:'tab' };
-let allVT=[], allTK=[], filtered=[];
-let openCards = new Set();
-let stimer = null;
+// ════════════════════════════════════════════════════════
+const ST = {
+  apiUrl:   localStorage.getItem("vattu_url") || "",
+  token:    localStorage.getItem("vattu_token") || "",
+  session:  JSON.parse(localStorage.getItem("vattu_session") || "null"),
+  vattu:    [],
+  banggia:  [],
+  tonkho:   [],
+  nhom:     {},
+  selected: new Set(),  // set of MaVT
+  editingPresetIdx: -1,
 
-// ============================================================
-// INIT
-// ============================================================
-(function(){
-  try { const s=localStorage.getItem('vtcfg2'); if(s) CFG={...CFG,...JSON.parse(s)}; } catch(e){}
-  applyUI();
-  if(CFG.url) loadVT(); else { setConn(false,'Chưa cài URL'); showEmpty('setup'); }
-})();
+  // Presets linh động — lưu localStorage
+  get presets() {
+    const raw = localStorage.getItem("vattu_presets");
+    if (raw) try { return JSON.parse(raw); } catch(e){}
+    return [
+      { name:"Báo giá",   desc:"Mã·Tên·QC·ĐVT·Giá bán·NC",  cols:["MaVT","TenVT","QuyCach","DVT","GiaNhapMoiNhat","LabHotel"] },
+      { name:"Dự toán",   desc:"Mã·Tên·ĐVT·Giá nhập·Bán·NC", cols:["MaVT","TenVT","DVT","GiaNhapMoiNhat","LabHotel"] },
+      { name:"Giá nhanh", desc:"Mã·Tên·Giá bán",              cols:["MaVT","TenVT","GiaNhapMoiNhat"] },
+      { name:"Đầy đủ",    desc:"Tất cả trường",               cols:["MaVT","TenVT","QuyCach","DVT","MaBrand","NhomHang","GiaNhapMoiNhat","LabHotel","LabVila","LabFactory"] },
+    ];
+  },
+  savePresets(p){ localStorage.setItem("vattu_presets", JSON.stringify(p)); },
 
-function applyUI(){
-  document.getElementById('cfg-url').value = CFG.url||'';
-  document.getElementById('cfg-sep').value = CFG.sep||'tab';
-  document.querySelectorAll('#col-grid input').forEach(cb=>{ cb.checked=CFG.cols.includes(cb.value); });
-  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
-  const pb=document.getElementById('p-'+CFG.preset); if(pb) pb.classList.add('active');
+  get selectedCols() {
+    const raw = localStorage.getItem("vattu_cols");
+    if (raw) try { return JSON.parse(raw); } catch(e){}
+    return ["MaVT","TenVT","QuyCach","DVT","GiaNhapMoiNhat","LabHotel"];
+  },
+  saveCols(c){ localStorage.setItem("vattu_cols", JSON.stringify(c)); },
+};
+
+const ALL_COLS = [
+  {key:"MaVT",           label:"Mã VT"},
+  {key:"TenVT",          label:"Tên VT"},
+  {key:"QuyCach",        label:"Quy Cách"},
+  {key:"DVT",            label:"ĐVT"},
+  {key:"MaBrand",        label:"Brand"},
+  {key:"NhomHang",       label:"Nhóm HH"},
+  {key:"GiaNhapMoiNhat", label:"Giá Nhập"},
+  {key:"LabHotel",       label:"NC Khách sạn"},
+  {key:"LabVila",        label:"NC Villa"},
+  {key:"LabFactory",     label:"NC Nhà máy"},
+  {key:"LabResidential", label:"NC Nhà dân"},
+  {key:"GhiChu",         label:"Ghi Chú"},
+];
+
+// ════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════
+function fmt(v){ return (typeof v==="number"&&v) ? v.toLocaleString("vi-VN") : (v||"—"); }
+function fmtPct(v){ return v ? (v*100).toFixed(1)+"%" : "0%"; }
+
+async function api(action, params={}) {
+  if (!ST.apiUrl) throw new Error("Chưa cấu hình URL");
+  const url = new URL(ST.apiUrl);
+  url.searchParams.set("action", action);
+  if (ST.token) url.searchParams.set("token", ST.token);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k,v));
+  const res = await fetch(url.toString());
+  return res.json();
 }
 
-// ============================================================
-// LOAD DATA
-// ============================================================
-function loadVT(){
-  if(!CFG.url) return;
-  setConn(null,'Đang tải...');
-  document.getElementById('result-list').innerHTML='<div class="spinner"></div>';
-  fetch(CFG.url+'?action=getAll')
-    .then(r=>r.json())
-    .then(d=>{ allVT=Array.isArray(d)?d:[]; buildFilters(); filtered=allVT; render(allVT); setConn(true,allVT.length+' vật tư'); })
-    .catch(()=>{ setConn(false,'Lỗi kết nối'); showEmpty('err'); });
+function toast(msg, dur=2000) {
+  const el = document.getElementById("clipboard-toast");
+  el.textContent = msg; el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), dur);
 }
 
-function loadTK(){
-  if(!CFG.url){ document.getElementById('tk-list').innerHTML='<div class="empty"><div class="empty-icon">⚙️</div><div class="empty-text">Chưa cài URL</div></div>'; return; }
-  if(allTK.length){ renderTK(allTK); return; }
-  fetch(CFG.url+'?action=getTonKho')
-    .then(r=>r.json())
-    .then(d=>{ allTK=d||[]; renderTK(allTK); })
-    .catch(()=>{ document.getElementById('tk-list').innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Lỗi tải tồn kho</div></div>'; });
-}
-
-// ============================================================
-// SEARCH
-// ============================================================
-function debounceSearch(){ clearTimeout(stimer); stimer=setTimeout(doSearch,280); }
-function doSearch(){
-  const kw=document.getElementById('q').value.toLowerCase().trim();
-  const nh=document.getElementById('f-nhom').value;
-  const br=document.getElementById('f-brand').value;
-  filtered=allVT.filter(v=>{
-    const ok=!kw||['MaVT','TenVT','QuyCach','Brand','NhomHang','DVT'].some(k=>v[k]&&v[k].toLowerCase().includes(kw));
-    return ok&&(!nh||v.NhomHang===nh)&&(!br||v.Brand===br);
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    toast("✓ Đã copy: " + text.substring(0,40) + (text.length>40?"...":""));
+  }).catch(() => {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy");
+    document.body.removeChild(ta);
+    toast("✓ Đã copy!");
   });
-  render(filtered);
-}
-function buildFilters(){
-  const ns=[...new Set(allVT.map(v=>v.NhomHang).filter(Boolean))].sort();
-  const bs=[...new Set(allVT.map(v=>v.Brand).filter(Boolean))].sort();
-  document.getElementById('f-nhom').innerHTML='<option value="">Tất cả nhóm</option>'+ns.map(x=>`<option>${x}</option>`).join('');
-  document.getElementById('f-brand').innerHTML='<option value="">Tất cả brand</option>'+bs.map(x=>`<option>${x}</option>`).join('');
-}
-function filterTK(){
-  const kw=document.getElementById('tk-q').value.toLowerCase();
-  renderTK(allTK.filter(v=>!kw||(v.MaVT&&v.MaVT.toLowerCase().includes(kw))||(v.TenVT&&v.TenVT.toLowerCase().includes(kw))));
 }
 
-// ============================================================
-// RENDER VẬT TƯ
-// ============================================================
-function render(data){
-  const meta=document.getElementById('result-meta');
-  const list=document.getElementById('result-list');
-  const hint=document.getElementById('workflow-hint');
-  document.getElementById('r-count').textContent=data.length;
-  meta.classList.toggle('show',data.length>0);
-  hint.style.display=data.length>0?'none':'';
-  if(!data.length){ list.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">Không tìm thấy kết quả</div></div>'; return; }
-  const slice=data.slice(0,60);
-  list.innerHTML=slice.map(v=>card(v)).join('');
-  if(data.length>60) list.innerHTML+=`<div class="empty" style="padding:8px;font-size:11px">... và ${data.length-60} kết quả khác</div>`;
+// ════════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════════
+function showLogin()  { document.getElementById("login-screen").style.display="flex"; document.getElementById("main-app").style.display="none"; }
+function showApp()    { document.getElementById("login-screen").style.display="none"; document.getElementById("main-app").style.display="block"; }
+
+async function doLogin() {
+  const email = document.getElementById("login-email").value.trim();
+  const pass  = document.getElementById("login-pass").value.trim();
+  const errEl = document.getElementById("login-error");
+  errEl.textContent = "";
+  if (!ST.apiUrl) { errEl.textContent = "⚠ Chưa cấu hình URL — vào Setup trước"; return; }
+  const btn = document.getElementById("btn-login");
+  btn.textContent = "Đang đăng nhập..."; btn.disabled = true;
+  try {
+    const res = await api("login", {email, password: pass});
+    if (res.success) {
+      ST.token = res.token;
+      ST.session = res.session;
+      localStorage.setItem("vattu_token",   res.token);
+      localStorage.setItem("vattu_session", JSON.stringify(res.session));
+      initApp();
+    } else {
+      errEl.textContent = "❌ " + (res.message || "Lỗi đăng nhập");
+    }
+  } catch(e) { errEl.textContent = "❌ " + e.message; }
+  btn.textContent = "🔐 Đăng nhập"; btn.disabled = false;
 }
 
-function card(v){
-  const cid='c_'+(v.MaVT||'').replace(/[^a-z0-9]/gi,'_');
-  const isOpen=openCards.has(v.MaVT);
-  const tags=[v.QuyCach,v.DVT,v.Brand,v.NhomHang].filter(Boolean).map(t=>`<span class="tag">${esc(t)}</span>`).join('');
+function doLogout() {
+  ST.token = ""; ST.session = null;
+  localStorage.removeItem("vattu_token"); localStorage.removeItem("vattu_session");
+  showLogin();
+}
 
-  // All field rows
-  const allFields=[
-    {k:'MaVT',cls:'code'},{k:'TenVT',cls:''},{k:'QuyCach',cls:''},{k:'DVT',cls:''},
-    {k:'Brand',cls:''},{k:'NhomHang',cls:''},{k:'GiaNhap',cls:'price'},
-    {k:'GiaBan',cls:'price'},{k:'NhanCong',cls:'price'},{k:'MaNCC',cls:''},{k:'GhiChu',cls:''},
+// ════════════════════════════════════════════════════════
+// INIT APP
+// ════════════════════════════════════════════════════════
+async function initApp() {
+  showApp();
+  const s = ST.session;
+  document.getElementById("user-name").textContent = s.HoTen || s.MaNV;
+  document.getElementById("user-role").textContent = (s.ChucDanh||"") + " · " + (s.PhanQuyen||"");
+  loadSetupUI();
+  await Promise.all([loadBangGia(), loadTonKho(), loadNhom()]);
+  renderSearchTab();
+  renderTonKhoTab();
+}
+
+// ════════════════════════════════════════════════════════
+// DATA LOAD
+// ════════════════════════════════════════════════════════
+async function loadBangGia() {
+  try {
+    const data = await api("getBangGia");
+    ST.banggia = Array.isArray(data) ? data : [];
+  } catch(e) { ST.banggia = []; }
+}
+
+async function loadTonKho() {
+  try {
+    const data = await api("getTonKho");
+    ST.tonkho = Array.isArray(data) ? data : [];
+  } catch(e) { ST.tonkho = []; }
+}
+
+async function loadNhom() {
+  try {
+    const data = await api("getNhom");
+    ST.nhom = data || {};
+    // Populate filter dropdowns
+    const nhomSel = document.getElementById("filter-nhom");
+    (ST.nhom.NhomHang || []).forEach(n => {
+      const o = document.createElement("option"); o.value=n; o.textContent=n; nhomSel.appendChild(o);
+    });
+    const brandSel = document.getElementById("filter-brand");
+    [...new Set(ST.banggia.map(v=>v.MaBrand).filter(Boolean))].forEach(b => {
+      const o = document.createElement("option"); o.value=b; o.textContent=b; brandSel.appendChild(o);
+    });
+    // Tồn kho store filter
+    const storeSel = document.getElementById("tk-filter-store");
+    [...new Set(ST.tonkho.map(t=>t.Store).filter(Boolean))].forEach(s => {
+      const o = document.createElement("option"); o.value=s; o.textContent=s; storeSel.appendChild(o);
+    });
+  } catch(e) {}
+}
+
+// ════════════════════════════════════════════════════════
+// SEARCH TAB
+// ════════════════════════════════════════════════════════
+function getFilteredVatTu() {
+  const kw    = document.getElementById("search-input").value.toLowerCase().trim();
+  const nhom  = document.getElementById("filter-nhom").value;
+  const brand = document.getElementById("filter-brand").value;
+  return ST.banggia.filter(v => {
+    if (nhom  && v.NhomHang !== nhom)  return false;
+    if (brand && v.MaBrand  !== brand) return false;
+    if (kw) {
+      const hay = [v.MaVT,v.TenVT,v.QuyCach,v.MaBrand,v.NhomHang].join(" ").toLowerCase();
+      if (!hay.includes(kw)) return false;
+    }
+    return true;
+  });
+}
+
+function renderSearchTab() {
+  const list = getFilteredVatTu();
+  document.getElementById("result-count").textContent  = list.length;
+  document.getElementById("selected-count").textContent = ST.selected.size;
+  const el = document.getElementById("vt-list");
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div>Không tìm thấy kết quả</div>`;
+    return;
+  }
+  el.innerHTML = list.map(v => {
+    const sel = ST.selected.has(v.MaVT);
+    const lab = v.LabHotel ? `<span>🔧 ${fmt(v.LabHotel)}đ</span>` : "";
+    const gia = v.GiaNhapMoiNhat ? `<span>💰 ${fmt(Math.round(v.GiaNhapMoiNhat))}đ</span>` : "";
+    return `
+    <div class="vt-card${sel?" selected":""}" data-mavt="${v.MaVT}" onclick="onCardClick('${v.MaVT}',event)">
+      <div class="vt-header">
+        <div class="checkbox-check">${sel?"✓":""}</div>
+        <span class="vt-code">${v.MaVT}</span>
+        <span class="vt-name">${v.TenVT}</span>
+        ${v.MaBrand?`<span class="vt-brand">${v.MaBrand}</span>`:""}
+      </div>
+      <div class="vt-meta">
+        ${v.QuyCach?`<span>📐 ${v.QuyCach}</span>`:""}
+        ${v.DVT?`<span>📦 ${v.DVT}</span>`:""}
+        ${gia}${lab}
+        ${v.NhomHang?`<span class="badge badge-ok">${v.NhomHang}</span>`:""}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// Click = toggle chọn nếu đang có nhiều, click đơn = mở panel
+let clickTimer = null;
+function onCardClick(maVT, event) {
+  if (ST.selected.size > 0) {
+    toggleSelect(maVT); return;
+  }
+  clearTimeout(clickTimer);
+  clickTimer = setTimeout(() => openSinglePanel(maVT), 200);
+}
+
+function toggleSelect(maVT) {
+  if (ST.selected.has(maVT)) ST.selected.delete(maVT);
+  else ST.selected.add(maVT);
+  updateMultiToolbar();
+  renderSearchTab();
+}
+
+function updateMultiToolbar() {
+  const n = ST.selected.size;
+  const tb = document.getElementById("multi-toolbar");
+  if (n > 0) {
+    tb.classList.add("show");
+    document.getElementById("toolbar-count").textContent = n + " đã chọn";
+    document.getElementById("selected-count").textContent = n;
+  } else {
+    tb.classList.remove("show");
+    document.getElementById("selected-count").textContent = 0;
+  }
+}
+
+function clearSelection() {
+  ST.selected.clear();
+  updateMultiToolbar();
+  renderSearchTab();
+}
+
+// ════════════════════════════════════════════════════════
+// SINGLE COPY PANEL
+// ════════════════════════════════════════════════════════
+function getVatTu(maVT) { return ST.banggia.find(v => v.MaVT === maVT); }
+
+function openSinglePanel(maVT) {
+  const v = getVatTu(maVT);
+  if (!v) return;
+  const panel = document.getElementById("copy-panel");
+  document.getElementById("copy-panel-title").textContent = v.MaVT + " — " + v.TenVT.substring(0,30);
+  const body = document.getElementById("copy-panel-body");
+
+  const fields = [
+    {key:"MaVT",            label:"Mã VT",    val:v.MaVT},
+    {key:"TenVT",           label:"Tên VT",   val:v.TenVT},
+    {key:"QuyCach",         label:"Quy cách", val:v.QuyCach},
+    {key:"DVT",             label:"ĐVT",      val:v.DVT},
+    {key:"MaBrand",         label:"Brand",    val:v.MaBrand},
+    {key:"NhomHang",        label:"Nhóm",     val:v.NhomHang},
+    {key:"GiaNhapMoiNhat",  label:"Giá nhập", val:v.GiaNhapMoiNhat ? fmt(Math.round(v.GiaNhapMoiNhat)) : "—"},
+    {key:"LabHotel",        label:"NC K.Sạn", val:fmt(v.LabHotel)},
+    {key:"LabVila",         label:"NC Villa",  val:fmt(v.LabVila)},
+    {key:"LabFactory",      label:"NC Nhà máy",val:fmt(v.LabFactory)},
+    {key:"LabResidential",  label:"NC Nhà dân",val:fmt(v.LabResidential)},
   ];
-  const fieldRows=allFields.filter(f=>v[f.k]).map(f=>{
-    const raw=String(v[f.k]||'');
-    const disp=PRICE_KEYS.includes(f.k)?fmtP(v[f.k]):raw;
-    const copyVal=PRICE_KEYS.includes(f.k)?String(parseFloat(v[f.k])||0):raw;
-    return `<div class="copy-row">
-      <span class="copy-label">${LABELS[f.k]||f.k}</span>
-      <span class="copy-value ${f.cls}" title="${esc(raw)}">${esc(disp)}</span>
-      <button class="copy-btn" onclick="cpField(event,'${esc2(copyVal)}','${f.k}',this)">📋 Copy</button>
-    </div>`;
-  }).join('');
 
-  // Serialize v for inline onclick
-  const vj=encodeURIComponent(JSON.stringify(v));
+  // 3 lần nhập gần nhất
+  const hist = (v.GiaNhap3Lan || []).map((g,i) =>
+    `<div style="font-size:11px;padding:4px 0;border-bottom:1px solid var(--border)">
+      <span style="color:var(--slate-md)">${g.NgayNhap||"?"}</span>
+      &nbsp;·&nbsp; <strong>${fmt(Math.round(g.ThanhTien / (g.SoLuong||1)))}đ</strong>
+      &nbsp;·&nbsp; <span style="color:var(--amber)">CK ${fmtPct(g.CK)}</span>
+      &nbsp;·&nbsp; <span style="color:var(--teal,#0F766E)">${g.MaNCC}</span>
+    </div>`
+  ).join("") || '<span style="font-size:11px;color:var(--slate-md)">Chưa có lịch sử nhập</span>';
 
-  return `<div class="vt-card ${isOpen?'open':''}" id="${cid}">
-    <div class="card-top" onclick="toggleCard('${esc2(v.MaVT||'')}','${cid}')">
-      <div class="card-main">
-        <div class="card-code">${esc(v.MaVT||'')}</div>
-        <div class="card-name">${esc(v.TenVT||'')}</div>
-        <div class="card-tags">${tags}</div>
-      </div>
-      <div class="card-toggle">▾</div>
+  body.innerHTML = `
+    <!-- Chi tiết từng trường -->
+    <div class="section-title">📋 Chi tiết từng trường</div>
+    ${fields.map(f => `
+      <div class="detail-row">
+        <span class="detail-label">${f.label}</span>
+        <span class="detail-value">${f.val||"—"}</span>
+        <button class="btn-copy-field" onclick="copyText('${String(f.val).replace(/'/g,"\\'")}')">copy</button>
+      </div>`).join("")}
+
+    <!-- Lịch sử giá -->
+    <div class="section-title" style="margin-top:14px">📈 3 lần nhập gần nhất</div>
+    ${hist}
+
+    <!-- Preset copy -->
+    <div class="section-title" style="margin-top:14px">🚀 Preset copy nhanh</div>
+    <div class="preset-grid" id="single-preset-grid"></div>
+
+    <!-- Copy theo cột đã chọn -->
+    <div class="section-title">📄 Copy theo cột đã chọn</div>
+    <button class="btn-copy-big" onclick="copyBySelectedCols('${maVT}')">
+      📋 Copy (${ST.selectedCols.length} cột) — dán thẳng vào Excel
+    </button>
+    <div style="font-size:10px;color:var(--slate-md);text-align:center;margin-top:4px">
+      Tab-separated → paste vào Excel tự điền nhiều ô
     </div>
-    <div class="copy-panel">
-      <div class="copy-section">
-        <div class="copy-section-title">Copy từng trường</div>
-        <div class="copy-fields">${fieldRows}</div>
-      </div>
-      <div class="copy-all-row">
-        <button class="copy-all-btn btn-row" onclick="cpPreset(event,'${vj}',this)">
-          📋 Preset (${CFG.cols.length} cột)
-        </button>
-        <button class="copy-all-btn btn-price" onclick="cpCols(event,'${vj}',['GiaBan','NhanCong'],this)">
-          💰 Giá+NC
-        </button>
-        <button class="copy-all-btn btn-baogia" onclick="cpCols(event,'${vj}',['MaVT','TenVT','QuyCach','DVT','GiaBan','NhanCong'],this)">
-          📄 Báo giá
-        </button>
-      </div>
+  `;
+
+  renderSinglePresets(maVT);
+  panel.classList.add("show");
+}
+
+function renderSinglePresets(maVT) {
+  const v = getVatTu(maVT);
+  const grid = document.getElementById("single-preset-grid");
+  if (!grid || !v) return;
+  grid.innerHTML = ST.presets.map((p, i) => `
+    <button class="btn-preset" onclick="copyPreset('${maVT}',${i})">
+      <div class="preset-name">${p.name}</div>
+      <div class="preset-desc">${p.desc}</div>
+    </button>`).join("");
+}
+
+function getValForKey(v, key) {
+  switch(key) {
+    case "GiaNhapMoiNhat": return v.GiaNhapMoiNhat ? Math.round(v.GiaNhapMoiNhat) : "";
+    case "LabHotel":    return v.LabHotel    || "";
+    case "LabVila":     return v.LabVila     || "";
+    case "LabFactory":  return v.LabFactory  || "";
+    case "LabResidential": return v.LabResidential || "";
+    default: return v[key] || "";
+  }
+}
+
+function copyPreset(maVT, presetIdx) {
+  const v = getVatTu(maVT);
+  const p = ST.presets[presetIdx];
+  if (!v || !p) return;
+  const text = p.cols.map(k => getValForKey(v, k)).join("\t");
+  copyText(text);
+}
+
+function copyBySelectedCols(maVT) {
+  const v = getVatTu(maVT);
+  if (!v) return;
+  const text = ST.selectedCols.map(k => getValForKey(v, k)).join("\t");
+  copyText(text);
+}
+
+// ════════════════════════════════════════════════════════
+// MULTI COPY PANEL
+// ════════════════════════════════════════════════════════
+function openMultiPanel() {
+  const items = [...ST.selected].map(m => getVatTu(m)).filter(Boolean);
+  if (!items.length) return;
+  const panel = document.getElementById("copy-panel");
+  document.getElementById("copy-panel-title").textContent = items.length + " vật tư đã chọn";
+  const body = document.getElementById("copy-panel-body");
+
+  body.innerHTML = `
+    <!-- Danh sách items -->
+    <div class="section-title">📦 Danh sách đã chọn</div>
+    ${items.map(v => `
+      <div class="multi-item-row">
+        <div class="mi-code">${v.MaVT} · ${v.MaBrand||""}</div>
+        <div class="mi-name">${v.TenVT}</div>
+        <div class="mi-meta">${v.QuyCach||""} · ${v.DVT||""} · Giá: ${v.GiaNhapMoiNhat ? fmt(Math.round(v.GiaNhapMoiNhat)) : "—"}đ</div>
+      </div>`).join("")}
+
+    <!-- Preset copy tất cả -->
+    <div class="section-title">🚀 Copy tất cả theo Preset</div>
+    <div class="preset-grid" id="multi-preset-grid"></div>
+
+    <!-- Copy theo cột chọn -->
+    <div class="section-title">📄 Copy theo cột đã chọn</div>
+    <button class="btn-copy-big" onclick="copyMultiBySelectedCols()">
+      📋 Copy ${items.length} dòng (${ST.selectedCols.length} cột)
+    </button>
+    <div style="font-size:10px;color:var(--slate-md);text-align:center;margin-top:4px">
+      Mỗi vật tư = 1 dòng trong Excel
     </div>
-  </div>`;
+  `;
+
+  // Render preset buttons
+  const grid = document.getElementById("multi-preset-grid");
+  grid.innerHTML = ST.presets.map((p,i) => `
+    <button class="btn-preset" onclick="copyMultiPreset(${i})">
+      <div class="preset-name">${p.name}</div>
+      <div class="preset-desc">${p.desc} × ${items.length}</div>
+    </button>`).join("");
+
+  panel.classList.add("show");
 }
 
-function toggleCard(maVT, domId){
-  const el=document.getElementById(domId); if(!el) return;
-  if(openCards.has(maVT)){ openCards.delete(maVT); el.classList.remove('open'); }
-  else { openCards.add(maVT); el.classList.add('open'); setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'nearest'}),50); }
+function copyMultiBySelectedCols() {
+  const items = [...ST.selected].map(m => getVatTu(m)).filter(Boolean);
+  const text = items.map(v => ST.selectedCols.map(k => getValForKey(v,k)).join("\t")).join("\n");
+  copyText(text);
 }
 
-// ============================================================
-// RENDER TỒN KHO
-// ============================================================
-function renderTK(data){
-  const list=document.getElementById('tk-list');
-  if(!data.length){ list.innerHTML='<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">Không có dữ liệu</div></div>'; return; }
-  list.innerHTML=data.map(v=>{
-    const w=v.TrangThai&&v.TrangThai.includes('⚠');
-    return `<div class="tk-card" style="${w?'border-color:#fca5a5':''}">
-      <div class="tk-top"><span class="tk-code">${esc(v.MaVT||'')}</span><span class="tk-name">${esc(v.TenVT||'')}</span></div>
-      <div class="tk-grid">
-        <div><div class="tk-lbl">Tồn kho</div><div class="tk-val" style="color:${w?'var(--red)':'var(--green)'}">${fmt(v.TonHienTai)} ${v.DVT||''}</div></div>
-        <div><div class="tk-lbl">Tổng nhập</div><div class="tk-val">${fmt(v.TongNhap)}</div></div>
-        <div><div class="tk-lbl">Tổng xuất</div><div class="tk-val">${fmt(v.TongXuat)}</div></div>
+function copyMultiPreset(presetIdx) {
+  const items = [...ST.selected].map(m => getVatTu(m)).filter(Boolean);
+  const p = ST.presets[presetIdx];
+  if (!p) return;
+  const text = items.map(v => p.cols.map(k => getValForKey(v,k)).join("\t")).join("\n");
+  copyText(text);
+}
+
+// Quick copy danh sách từ toolbar
+function copySelectedList() {
+  const items = [...ST.selected].map(m => getVatTu(m)).filter(Boolean);
+  const text = items.map(v =>
+    ST.selectedCols.map(k => getValForKey(v,k)).join("\t")
+  ).join("\n");
+  copyText(text);
+}
+
+// ════════════════════════════════════════════════════════
+// TỒN KHO TAB
+// ════════════════════════════════════════════════════════
+function renderTonKhoTab() {
+  const kw    = document.getElementById("tk-search").value.toLowerCase().trim();
+  const store = document.getElementById("tk-filter-store").value;
+  const list  = ST.tonkho.filter(t => {
+    if (store && t.Store !== store) return false;
+    if (kw) {
+      const hay = [t.MaVT,t.TenVT,t.Store].join(" ").toLowerCase();
+      if (!hay.includes(kw)) return false;
+    }
+    return true;
+  });
+  const el = document.getElementById("tk-list");
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div>Không có dữ liệu tồn kho</div>`;
+    return;
+  }
+  const clsMap = {
+    "Đủ hàng":"ok","Cảnh báo thấp":"warn","Sắp hết":"danger","Hết hàng":"danger"
+  };
+  el.innerHTML = list.map(t => `
+    <div class="tk-card ${clsMap[t.LoaiCanhBao]||""}">
+      <div class="tk-header">
+        <span class="vt-code">${t.MaVT}</span>
+        <span style="flex:1;font-weight:600">${t.TenVT}</span>
+        <span class="badge ${t.LoaiCanhBao==="Đủ hàng"?"badge-ok":t.LoaiCanhBao==="Sắp hết"||t.LoaiCanhBao==="Hết hàng"?"badge-off":"badge-warn"}">
+          ${t.LoaiCanhBao||"—"}
+        </span>
       </div>
-      ${w?'<div class="tk-warn">⚠ Sắp hết hàng</div>':''}
-    </div>`;
-  }).join('');
+      <div style="font-size:11px;color:var(--slate-md);margin-bottom:4px">🏭 ${t.Store||"—"} · ${t.DVT||""}</div>
+      <div class="tk-bars">
+        <div class="tk-bar">Đầu: <span class="num">${fmt(t.TonDau)}</span></div>
+        <div class="tk-bar">Nhập: <span class="num" style="color:var(--green)">${fmt(t.TongNhap)}</span></div>
+        <div class="tk-bar">Xuất: <span class="num" style="color:var(--red)">${fmt(t.TongXuat)}</span></div>
+        <div class="tk-bar">Tồn: <span class="num" style="color:var(--blue);font-size:13px">${fmt(t.TonHienTai)}</span></div>
+        <div class="tk-bar" style="color:var(--amber)">CB: ${fmt(t.MucCanhBao)}</div>
+      </div>
+    </div>`).join("");
 }
 
-// ============================================================
-// COPY
-// ============================================================
-function cpField(e,rawVal,fieldKey,btn){
-  e.stopPropagation();
-  doCopy(rawVal, btn, (LABELS[fieldKey]||fieldKey)+': '+(PRICE_KEYS.includes(fieldKey)?fmtP(rawVal):rawVal));
-}
-function cpCols(e,vjson,cols,btn){
-  e.stopPropagation();
-  const v=JSON.parse(decodeURIComponent(vjson));
-  const sep=CFG.sep==='tab'?'\t':CFG.sep==='comma'?',':'|';
-  const vals=cols.map(k=>{ const val=v[k]||''; return PRICE_KEYS.includes(k)?String(parseFloat(val)||0):val; });
-  doCopy(vals.join(sep), btn, cols.map(k=>LABELS[k]||k).join(' | ')+': '+vals.join(' / '));
-}
-function cpPreset(e,vjson,btn){
-  e.stopPropagation();
-  cpCols(e,vjson,CFG.cols,btn);
+// ════════════════════════════════════════════════════════
+// SETUP TAB
+// ════════════════════════════════════════════════════════
+function loadSetupUI() {
+  document.getElementById("setup-url").value = ST.apiUrl;
+  renderPresetManager();
+  renderColSelector();
 }
 
-function doCopy(text,btn,label){
-  const doIt=()=>{
-    if(btn){ const o=btn.innerHTML; btn.classList.add('copied'); btn.innerHTML='✓ Đã copy!'; setTimeout(()=>{ btn.classList.remove('copied'); btn.innerHTML=o; },2000); }
-    showClip(label||text);
-  };
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(text).then(doIt).catch(()=>{ fallbackCopy(text); doIt(); });
-  } else { fallbackCopy(text); doIt(); }
-}
-function fallbackCopy(text){
-  const ta=document.createElement('textarea');
-  ta.value=text; ta.style.cssText='position:fixed;opacity:0;top:0;left:0';
-  document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-}
-
-let clipTimer=null;
-function showClip(text){
-  const bar=document.getElementById('clip-bar');
-  document.getElementById('clip-text').textContent=text;
-  bar.classList.add('show');
-  clearTimeout(clipTimer);
-  clipTimer=setTimeout(()=>bar.classList.remove('show'),3500);
+function renderPresetManager() {
+  const el = document.getElementById("preset-manager-list");
+  const presets = ST.presets;
+  el.innerHTML = presets.map((p,i) => `
+    <div class="preset-list-item">
+      <div style="flex:1">
+        <div class="pli-name">${p.name}</div>
+        <div class="pli-desc">${p.desc}</div>
+      </div>
+      <button class="btn-pli-edit" onclick="openEditPreset(${i})">Sửa</button>
+      <button class="btn-pli-del" onclick="deletePreset(${i})">Xóa</button>
+    </div>`).join("");
 }
 
-// ============================================================
-// SETTINGS ACTIONS
-// ============================================================
-function saveAndLoad(){
-  CFG.url=document.getElementById('cfg-url').value.trim();
-  CFG.sep=document.getElementById('cfg-sep').value;
-  saveCFG(); allVT=[]; allTK=[]; loadVT();
+function renderColSelector() {
+  const el = document.getElementById("col-selector");
+  const sel = ST.selectedCols;
+  el.innerHTML = ALL_COLS.map(c => `
+    <label class="col-check">
+      <input type="checkbox" value="${c.key}" ${sel.includes(c.key)?"checked":""}>
+      <span>${c.label}</span>
+    </label>`).join("");
 }
-function saveCols(){
-  CFG.cols=[]; document.querySelectorAll('#col-grid input:checked').forEach(cb=>CFG.cols.push(cb.value));
-  CFG.sep=document.getElementById('cfg-sep').value;
-  saveCFG(); showClip('✅ Đã lưu cấu hình cột!');
-}
-function setPreset(name,btn){
-  CFG.preset=name; CFG.cols=[...PRESETS[name]];
-  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
-  document.querySelectorAll('#col-grid input').forEach(cb=>{ cb.checked=CFG.cols.includes(cb.value); });
-  saveCFG(); showClip('✅ Preset: '+btn.firstChild.textContent.trim());
-}
-function saveCFG(){ localStorage.setItem('vtcfg2',JSON.stringify(CFG)); }
 
-// ============================================================
-// TAB / CONN / UTILS
-// ============================================================
-function switchTab(name,el){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('tab-'+name).classList.add('active');
-  if(name==='tonkho') loadTK();
+// Preset CRUD
+function openAddPreset() {
+  ST.editingPresetIdx = -1;
+  document.getElementById("preset-modal-title").textContent = "Thêm Preset Mới";
+  document.getElementById("preset-name-input").value = "";
+  document.getElementById("preset-desc-input").value = "";
+  renderPresetColSelector([]);
+  document.getElementById("preset-modal").classList.add("show");
 }
-function setConn(ok,text){
-  const d=document.getElementById('conn-dot');
-  document.getElementById('conn-text').textContent=text;
-  if(ok===true){ d.className='conn-dot'; }
-  else if(ok===false){ d.className='conn-dot off'; }
-  else { d.className='conn-dot'; d.style.background='#fbbf24'; }
+
+function openEditPreset(idx) {
+  ST.editingPresetIdx = idx;
+  const p = ST.presets[idx];
+  document.getElementById("preset-modal-title").textContent = "Sửa Preset";
+  document.getElementById("preset-name-input").value = p.name;
+  document.getElementById("preset-desc-input").value = p.desc;
+  renderPresetColSelector(p.cols);
+  document.getElementById("preset-modal").classList.add("show");
 }
-function showEmpty(type){
-  const msgs={
-    setup:'<div class="empty"><div class="empty-icon">⚙️</div><div class="empty-text">Vào tab ⚙ Setup → nhập URL Google Sheet</div></div>',
-    err:'<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Không kết nối được.<br>Kiểm tra URL trong ⚙ Setup</div></div>',
-  };
-  document.getElementById('result-list').innerHTML=msgs[type]||'';
-  document.getElementById('workflow-hint').style.display='none';
+
+function renderPresetColSelector(selected) {
+  const el = document.getElementById("preset-col-selector");
+  el.innerHTML = ALL_COLS.map(c => `
+    <label class="col-check">
+      <input type="checkbox" value="${c.key}" ${selected.includes(c.key)?"checked":""}>
+      <span>${c.label}</span>
+    </label>`).join("");
 }
-function fmtP(n){ const num=parseFloat(n); if(!num||isNaN(num)) return '—'; return num.toLocaleString('vi-VN')+' đ'; }
-function fmt(n){ if(n===''||n==null) return '—'; const num=parseFloat(n); return isNaN(num)?String(n):num.toLocaleString('vi-VN'); }
-function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function esc2(s){ return String(s||'').replace(/'/g,"\\'"); }
+
+function savePreset() {
+  const name = document.getElementById("preset-name-input").value.trim();
+  const desc = document.getElementById("preset-desc-input").value.trim();
+  const cols = [...document.querySelectorAll("#preset-col-selector input:checked")].map(i=>i.value);
+  if (!name || !cols.length) { alert("Nhập tên và chọn ít nhất 1 cột!"); return; }
+  const presets = [...ST.presets];
+  const newP = { name, desc: desc||cols.join("·"), cols };
+  if (ST.editingPresetIdx >= 0) presets[ST.editingPresetIdx] = newP;
+  else presets.push(newP);
+  ST.savePresets(presets);
+  document.getElementById("preset-modal").classList.remove("show");
+  renderPresetManager();
+}
+
+function deletePreset(idx) {
+  if (!confirm("Xóa preset này?")) return;
+  const presets = ST.presets.filter((_,i) => i!==idx);
+  ST.savePresets(presets);
+  renderPresetManager();
+}
+
+// ════════════════════════════════════════════════════════
+// EVENT LISTENERS
+// ════════════════════════════════════════════════════════
+window.addEventListener("DOMContentLoaded", () => {
+  // Setup URL
+  const statusEl = document.getElementById("conn-status");
+  document.getElementById("setup-url").value = ST.apiUrl;
+
+  document.getElementById("btn-save-url").addEventListener("click", async () => {
+    const url = document.getElementById("setup-url").value.trim();
+    if (!url) return;
+    localStorage.setItem("vattu_url", url);
+    ST.apiUrl = url;
+    statusEl.style.display = "block";
+    statusEl.className = "conn-status"; statusEl.textContent = "Đang kết nối...";
+    try {
+      const r = await fetch(url + "?action=getAll");
+      const d = await r.json();
+      if (Array.isArray(d)) {
+        statusEl.className = "conn-status conn-ok";
+        statusEl.textContent = "✅ Kết nối thành công! " + d.length + " vật tư";
+      } else {
+        statusEl.className = "conn-status conn-err";
+        statusEl.textContent = "⚠️ " + (d.error || "Phản hồi không đúng định dạng");
+      }
+    } catch(e) {
+      statusEl.className = "conn-status conn-err";
+      statusEl.textContent = "❌ " + e.message;
+    }
+  });
+
+  // Save cols
+  document.getElementById("btn-save-cols").addEventListener("click", () => {
+    const cols = [...document.querySelectorAll("#col-selector input:checked")].map(i=>i.value);
+    ST.saveCols(cols);
+    toast("✅ Đã lưu cấu hình " + cols.length + " cột!");
+  });
+
+  // Login
+  document.getElementById("btn-login").addEventListener("click", doLogin);
+  document.getElementById("login-pass").addEventListener("keydown", e => { if(e.key==="Enter") doLogin(); });
+  document.getElementById("btn-logout").addEventListener("click", doLogout);
+
+  // Tabs
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn,.tab-panel").forEach(el=>el.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("tab-"+btn.dataset.tab).classList.add("active");
+    });
+  });
+
+  // Search
+  let searchTimer;
+  document.getElementById("search-input").addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(renderSearchTab, 250);
+  });
+  document.getElementById("filter-nhom").addEventListener("change", renderSearchTab);
+  document.getElementById("filter-brand").addEventListener("change", renderSearchTab);
+
+  // Tồn kho filter
+  document.getElementById("tk-search").addEventListener("input", renderTonKhoTab);
+  document.getElementById("tk-filter-store").addEventListener("change", renderTonKhoTab);
+
+  // Multi toolbar
+  document.getElementById("btn-copy-selected").addEventListener("click", copySelectedList);
+  document.getElementById("btn-open-multi-panel").addEventListener("click", openMultiPanel);
+  document.getElementById("btn-clear-sel").addEventListener("click", clearSelection);
+
+  // Close panel
+  document.getElementById("btn-close-panel").addEventListener("click", () => {
+    document.getElementById("copy-panel").classList.remove("show");
+  });
+
+  // Preset
+  document.getElementById("btn-add-preset").addEventListener("click", openAddPreset);
+  document.getElementById("btn-preset-save").addEventListener("click", savePreset);
+  document.getElementById("btn-preset-cancel").addEventListener("click", () => {
+    document.getElementById("preset-modal").classList.remove("show");
+  });
+
+  // Keyboard shortcut
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      document.getElementById("copy-panel").classList.remove("show");
+      document.getElementById("preset-modal").classList.remove("show");
+    }
+    if (e.key === "Enter" && document.getElementById("tab-search").classList.contains("active")) {
+      document.getElementById("search-input").focus();
+    }
+  });
+
+  // Init: nếu đã có session thì vào thẳng, không thì login
+  if (ST.session && ST.apiUrl && ST.token) {
+    initApp();
+  } else {
+    // Hiện login nhưng nếu chưa có URL thì hiện setup hint
+    showLogin();
+    if (!ST.apiUrl) {
+      document.getElementById("login-error").innerHTML =
+        `<span style="color:var(--amber)">⚙️ Lần đầu: vào Setup để nhập URL trước</span>`;
+      // Cho phép bypass login để vào Setup
+      const bypassBtn = document.createElement("button");
+      bypassBtn.textContent = "⚙️ Vào Setup";
+      bypassBtn.style.cssText = "width:100%;padding:8px;margin-top:8px;background:var(--amber);color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:700";
+      bypassBtn.onclick = () => {
+        ST.session = { MaNV:"guest", HoTen:"Setup Mode", PhanQuyen:"Viewer", ChucDanh:"", PhongBan:"" };
+        showApp();
+        document.querySelector('[data-tab="setup"]').click();
+      };
+      document.querySelector(".login-box").appendChild(bypassBtn);
+    }
+  }
+});
 </script>
 </body>
 </html>
