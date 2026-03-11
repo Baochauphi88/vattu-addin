@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vật Tư Add-in</title>
+
+<!-- Office.js - BẮT BUỘC phải load trước -->
+<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   DESIGN: Compact Industrial — màu nền trắng/xám nhạt
+   Phù hợp với môi trường Excel (không quá tối, dễ nhìn)
+   ============================================================ */
+:root {
+  --bg:       #f5f6f8;
+  --surface:  #ffffff;
+  --border:   #e2e5ea;
+  --border2:  #d0d5dd;
+  --accent:   #0f6cbd;
+  --accent-h: #0958a8;
+  --green:    #107c10;
+  --green-bg: #e8f5e8;
+  --red:      #c4262e;
+  --red-bg:   #fde8e8;
+  --yellow:   #9a6700;
+  --yel-bg:   #fff3cd;
+  --text:     #1a1d23;
+  --muted:    #6b7280;
+  --mono:     'JetBrains Mono', monospace;
+  --font:     'DM Sans', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  overflow-x: hidden;
+}
+
+/* ---- HEADER ---- */
+.header {
+  background: var(--accent);
+  padding: 10px 12px 8px;
+  display: flex; align-items: center; gap: 8px;
+  position: sticky; top: 0; z-index: 100;
+}
+.header-logo {
+  width: 26px; height: 26px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: white;
+  font-family: var(--mono);
+}
+.header-text { flex: 1; }
+.header-title {
+  font-size: 13px; font-weight: 600; color: white; line-height: 1;
+}
+.header-sub {
+  font-size: 10px; color: rgba(255,255,255,0.7);
+  font-family: var(--mono); margin-top: 2px;
+}
+.conn-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 6px #4ade80;
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ---- TABS ---- */
+.tabs {
+  display: flex; background: var(--surface);
+  border-bottom: 2px solid var(--border);
+}
+.tab {
+  flex: 1; padding: 8px 4px; text-align: center;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  color: var(--muted); border-bottom: 2px solid transparent;
+  margin-bottom: -2px; transition: all .15s;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab:hover:not(.active) { color: var(--text); background: var(--bg); }
+
+/* ---- PANELS ---- */
+.panel { display: none; padding: 10px; }
+.panel.active { display: block; }
+
+/* ---- SEARCH ---- */
+.search-box {
+  position: relative; margin-bottom: 8px;
+}
+.search-box input {
+  width: 100%; padding: 8px 32px 8px 10px;
+  border: 1.5px solid var(--border2);
+  border-radius: 7px; font-size: 13px;
+  font-family: var(--font); outline: none;
+  background: var(--surface);
+  transition: border-color .2s;
+}
+.search-box input:focus { border-color: var(--accent); }
+.search-box input::placeholder { color: var(--muted); }
+.search-icon {
+  position: absolute; right: 9px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted); font-size: 15px; cursor: pointer;
+  transition: color .15s;
+}
+.search-icon:hover { color: var(--accent); }
+
+/* ---- FILTER ROW ---- */
+.filter-row {
+  display: flex; gap: 6px; margin-bottom: 10px;
+}
+.filter-row select {
+  flex: 1; padding: 6px 8px;
+  border: 1px solid var(--border2);
+  border-radius: 6px; font-size: 12px;
+  font-family: var(--font); outline: none;
+  background: var(--surface); cursor: pointer;
+}
+.filter-row select:focus { border-color: var(--accent); }
+
+/* ---- RESULT LIST ---- */
+.result-list {
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+}
+.result-list::-webkit-scrollbar { width: 4px; }
+.result-list::-webkit-scrollbar-track { background: transparent; }
+.result-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.vt-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 8px; padding: 9px 10px;
+  cursor: pointer; transition: all .15s;
+  position: relative;
+}
+.vt-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(15,108,189,.12); }
+.vt-card.selected {
+  border-color: var(--accent);
+  background: #f0f7ff;
+  box-shadow: 0 0 0 2px rgba(15,108,189,.2);
+}
+.vt-card-check {
+  position: absolute; right: 9px; top: 9px;
+  width: 18px; height: 18px;
+  border: 2px solid var(--border2);
+  border-radius: 4px; background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; transition: all .15s;
+}
+.vt-card.selected .vt-card-check {
+  background: var(--accent); border-color: var(--accent);
+  color: white;
+}
+.vt-code {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--accent); font-weight: 600;
+  margin-bottom: 3px;
+}
+.vt-name {
+  font-size: 12px; font-weight: 600; color: var(--text);
+  margin-bottom: 4px; padding-right: 22px;
+  line-height: 1.3;
+}
+.vt-tags {
+  display: flex; gap: 4px; flex-wrap: wrap;
+}
+.vt-tag {
+  font-size: 10px; padding: 2px 7px; border-radius: 10px;
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--muted); font-family: var(--mono);
+}
+.vt-prices {
+  display: flex; gap: 8px; margin-top: 5px;
+  padding-top: 5px; border-top: 1px solid var(--border);
+}
+.price-item { flex: 1; }
+.price-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.price-val { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text); }
+.price-val.green { color: var(--green); }
+
+/* ---- EMPTY / LOADING ---- */
+.empty {
+  text-align: center; padding: 30px 10px;
+  color: var(--muted); font-size: 12px;
+}
+.empty .e-icon { font-size: 28px; margin-bottom: 8px; opacity: .4; }
+.spinner {
+  width: 24px; height: 24px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  margin: 20px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- SELECTION BAR ---- */
+.sel-bar {
+  position: sticky; bottom: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 8px 10px;
+  display: none;
+}
+.sel-bar.show { display: block; }
+.sel-info {
+  font-size: 11px; color: var(--muted); margin-bottom: 6px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sel-count {
+  font-family: var(--mono); font-weight: 700; color: var(--accent);
+}
+.sel-clear { cursor: pointer; color: var(--red); font-size: 11px; }
+.sel-clear:hover { text-decoration: underline; }
+
+/* ---- INSERT OPTIONS ---- */
+.insert-opts {
+  display: flex; flex-direction: column; gap: 5px;
+}
+.insert-mode {
+  display: flex; gap: 5px;
+}
+.insert-mode-btn {
+  flex: 1; padding: 5px 4px; border: 1.5px solid var(--border2);
+  border-radius: 6px; background: var(--surface);
+  font-size: 10px; font-weight: 600; cursor: pointer;
+  text-align: center; color: var(--muted);
+  transition: all .15s; font-family: var(--font);
+}
+.insert-mode-btn.active {
+  border-color: var(--accent); color: var(--accent);
+  background: #f0f7ff;
+}
+.insert-btn {
+  width: 100%; padding: 8px;
+  background: var(--accent); border: none;
+  border-radius: 7px; color: white;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: var(--font);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: background .15s;
+}
+.insert-btn:hover { background: var(--accent-h); }
+.insert-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ---- COLUMN SELECTOR ---- */
+.col-selector {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px; margin-top: 5px;
+}
+.col-selector-title {
+  font-size: 10px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px;
+}
+.col-checks {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+}
+.col-check {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; cursor: pointer; padding: 3px 0;
+}
+.col-check input[type=checkbox] { accent-color: var(--accent); }
+
+/* ---- SETTINGS PANEL ---- */
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.section-title {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .8px;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 5px;
+}
+.fg { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.fg:last-child { margin-bottom: 0; }
+.fg label { font-size: 11px; font-weight: 600; color: var(--muted); }
+.fg input, .fg select {
+  padding: 7px 9px; border: 1.5px solid var(--border2);
+  border-radius: 6px; font-size: 12px;
+  font-family: var(--font); outline: none;
+  background: var(--surface);
+  transition: border-color .2s;
+}
+.fg input:focus, .fg select:focus { border-color: var(--accent); }
+.fg .hint { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+.save-btn {
+  width: 100%; padding: 8px;
+  background: var(--green); border: none;
+  border-radius: 7px; color: white;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: var(--font);
+  transition: opacity .15s;
+}
+.save-btn:hover { opacity: .9; }
+
+/* ---- TOAST ---- */
+.toast {
+  position: fixed; bottom: 12px; left: 10px; right: 10px;
+  padding: 9px 12px; border-radius: 7px;
+  font-size: 12px; font-weight: 600;
+  display: none; align-items: center; gap: 7px;
+  z-index: 999; animation: toastIn .2s ease;
+}
+.toast.show { display: flex; }
+.toast-ok   { background: var(--green-bg); color: var(--green); border: 1px solid #a7d7a7; }
+.toast-err  { background: var(--red-bg);   color: var(--red);   border: 1px solid #f5a0a5; }
+.toast-info { background: #e8f0fe; color: var(--accent); border: 1px solid #b3cef6; }
+@keyframes toastIn { from{transform:translateY(8px);opacity:0} to{transform:none;opacity:1} }
+
+/* ---- DETAIL DRAWER ---- */
+.drawer {
+  position: fixed; inset: 0; z-index: 200;
+  display: none;
+}
+.drawer.open { display: block; }
+.drawer-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.35);
+}
+.drawer-content {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-radius: 12px 12px 0 0;
+  padding: 14px; max-height: 70vh; overflow-y: auto;
+  animation: slideUp .25s ease;
+}
+@keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:none;opacity:1} }
+.drawer-handle {
+  width: 36px; height: 4px; background: var(--border2);
+  border-radius: 2px; margin: 0 auto 12px;
+}
+.drawer-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+.detail-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.detail-item { }
+.detail-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.detail-val { font-size: 13px; font-weight: 600; margin-top: 2px; font-family: var(--mono); }
+.detail-val.accent { color: var(--accent); }
+.drawer-actions { display: flex; gap: 6px; margin-top: 12px; }
+.drawer-actions button {
+  flex: 1; padding: 9px; border: none; border-radius: 7px;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  font-family: var(--font); transition: opacity .15s;
+}
+.drawer-actions button:hover { opacity: .85; }
+.btn-insert-all {
+  background: var(--accent); color: white;
+}
+.btn-insert-price {
+  background: var(--green-bg); color: var(--green);
+  border: 1.5px solid #a7d7a7 !important;
+}
+
+/* ---- RESULT META ---- */
+.result-meta {
+  font-size: 10px; color: var(--muted);
+  margin-bottom: 6px; font-family: var(--mono);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.select-all-btn {
+  font-size: 10px; color: var(--accent);
+  cursor: pointer; font-weight: 600;
+}
+.select-all-btn:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">VT</div>
+  <div class="header-text">
+    <div class="header-title">Vật Tư Add-in</div>
+    <div class="header-sub" id="conn-status">Đang kết nối...</div>
+  </div>
+  <div class="conn-dot" id="conn-dot" style="background:#f87171;box-shadow:none"></div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('search',this)">🔍 Tìm kiếm</div>
+  <div class="tab" onclick="switchTab('tonkho',this)">📦 Tồn kho</div>
+  <div class="tab" onclick="switchTab('settings',this)">⚙️ Cài đặt</div>
+</div>
+
+<!-- ============ TAB: TÌM KIẾM ============ -->
+<div id="tab-search" class="panel active">
+  <div class="search-box">
+    <input type="text" id="search-input"
+      placeholder="Tìm mã, tên, brand, quy cách..."
+      oninput="onSearchInput()" onkeydown="onSearchKey(event)">
+    <span class="search-icon" onclick="doSearch()">⏎</span>
+  </div>
+
+  <div class="filter-row">
+    <select id="filter-nhom" onchange="doSearch()">
+      <option value="">Tất cả nhóm</option>
+    </select>
+    <select id="filter-brand" onchange="doSearch()">
+      <option value="">Tất cả brand</option>
+    </select>
+  </div>
+
+  <div id="result-meta" class="result-meta" style="display:none">
+    <span id="result-count"></span>
+    <span class="select-all-btn" onclick="toggleSelectAll()" id="sel-all-btn">Chọn tất cả</span>
+  </div>
+
+  <div id="result-list" class="result-list">
+    <div class="empty">
+      <div class="e-icon">🔍</div>
+      Gõ từ khóa để tìm vật tư
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB: TỒN KHO ============ -->
+<div id="tab-tonkho" class="panel">
+  <div class="search-box" style="margin-bottom:8px">
+    <input type="text" id="tk-search" placeholder="Tìm vật tư..."
+      oninput="filterTonKho()">
+    <span class="search-icon">⏎</span>
+  </div>
+  <div id="tk-list" class="result-list">
+    <div class="spinner"></div>
+  </div>
+</div>
+
+<!-- ============ TAB: CÀI ĐẶT ============ -->
+<div id="tab-settings" class="panel">
+
+  <div class="section">
+    <div class="section-title">🔗 Kết nối Google Sheet</div>
+    <div class="fg">
+      <label>Web App URL (từ Apps Script Deploy)</label>
+      <input type="text" id="cfg-url"
+        placeholder="https://script.google.com/macros/s/.../exec">
+      <div class="hint">Paste URL sau khi Deploy Web App trong Apps Script</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📤 Cấu hình cột xuất dữ liệu</div>
+    <div class="hint" style="margin-bottom:8px;font-size:11px;color:var(--muted)">
+      Khi chèn vào Excel, thứ tự cột sẽ theo cấu hình này
+    </div>
+
+    <div class="fg">
+      <label>Preset xuất nhanh</label>
+      <select id="cfg-preset" onchange="applyPreset()">
+        <option value="custom">Tự chọn cột</option>
+        <option value="baogia">Báo giá (Mã, Tên, Quy cách, ĐVT, Giá bán, Nhân công)</option>
+        <option value="dutoan">Dự toán (Mã, Tên, ĐVT, Giá nhập, Giá bán, Nhân công)</option>
+        <option name="full">Đầy đủ (tất cả cột)</option>
+        <option value="gianhanh">Giá nhanh (Mã, Tên, Giá bán)</option>
+      </select>
+    </div>
+
+    <div class="col-selector">
+      <div class="col-selector-title">Chọn & sắp xếp cột xuất</div>
+      <div class="col-checks" id="col-checks">
+        <label class="col-check"><input type="checkbox" value="MaVT" checked> Mã VT</label>
+        <label class="col-check"><input type="checkbox" value="TenVT" checked> Tên VT</label>
+        <label class="col-check"><input type="checkbox" value="QuyCach" checked> Quy Cách</label>
+        <label class="col-check"><input type="checkbox" value="DVT" checked> ĐVT</label>
+        <label class="col-check"><input type="checkbox" value="Brand"> Brand</label>
+        <label class="col-check"><input type="checkbox" value="NhomHang"> Nhóm Hàng</label>
+        <label class="col-check"><input type="checkbox" value="GiaNhap"> Giá Nhập</label>
+        <label class="col-check"><input type="checkbox" value="GiaBan" checked> Giá Bán</label>
+        <label class="col-check"><input type="checkbox" value="NhanCong" checked> Nhân Công</label>
+        <label class="col-check"><input type="checkbox" value="MaNCC"> Mã NCC</label>
+        <label class="col-check"><input type="checkbox" value="GhiChu"> Ghi Chú</label>
+      </div>
+    </div>
+
+    <div class="fg" style="margin-top:8px">
+      <label>Hướng chèn dữ liệu</label>
+      <select id="cfg-direction">
+        <option value="right">Ngang → (mỗi trường 1 cột liên tiếp)</option>
+        <option value="down">Xuống ↓ (mỗi vật tư 1 hàng, nhiều hàng)</option>
+      </select>
+    </div>
+
+    <div class="fg">
+      <label>Định dạng số tiền</label>
+      <select id="cfg-numfmt">
+        <option value="number">Số thuần (123456789)</option>
+        <option value="comma">Phân cách nghìn (123,456,789)</option>
+        <option value="vnd">Kèm đơn vị (123,456,789 đ)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">⌨️ Phím tắt</div>
+    <div style="font-size:11px;color:var(--muted);line-height:1.8">
+      <b>Enter</b> → Tìm kiếm<br>
+      <b>Ctrl+Enter</b> → Chèn vật tư đã chọn<br>
+      <b>Esc</b> → Bỏ chọn tất cả
+    </div>
+  </div>
+
+  <button class="save-btn" onclick="saveSettings()">💾 Lưu cài đặt</button>
+</div>
+
+<!-- SELECTION BAR (sticky bottom) -->
+<div class="sel-bar" id="sel-bar">
+  <div class="sel-info">
+    <span>Đã chọn: <span class="sel-count" id="sel-count">0</span> vật tư</span>
+    <span class="sel-clear" onclick="clearSelection()">✕ Bỏ chọn</span>
+  </div>
+  <div class="insert-opts">
+    <div class="insert-mode">
+      <div class="insert-mode-btn active" id="mode-row" onclick="setMode('row',this)">
+        → Ngang (1 hàng)
+      </div>
+      <div class="insert-mode-btn" id="mode-col" onclick="setMode('col',this)">
+        ↓ Xuống dòng
+      </div>
+      <div class="insert-mode-btn" id="mode-sel" onclick="setMode('sel',this)">
+        📍 Ô đang chọn
+      </div>
+    </div>
+    <button class="insert-btn" id="insert-btn" onclick="insertToExcel()">
+      ↳ Chèn vào Excel
+    </button>
+  </div>
+</div>
+
+<!-- DETAIL DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-overlay" onclick="closeDrawer()"></div>
+  <div class="drawer-content">
+    <div class="drawer-handle"></div>
+    <div class="drawer-title" id="drawer-title">Chi tiết vật tư</div>
+    <div class="detail-grid" id="drawer-detail"></div>
+    <div class="drawer-actions">
+      <button class="btn-insert-price" onclick="insertSingleField('GiaBan')">
+        💰 Chèn giá bán
+      </button>
+      <button class="btn-insert-all" onclick="insertSingleRow()">
+        ↳ Chèn đầy đủ
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let allVatTu  = [];
+let allTonKho = [];
+let filtered  = [];
+let selected  = new Set(); // Set of MaVT
+let insertMode = 'row';    // 'row' | 'col' | 'sel'
+let drawerVT   = null;
+let searchTimer = null;
+
+// Config defaults
+let CFG = {
+  url:       '',
+  cols:      ['MaVT','TenVT','QuyCach','DVT','GiaBan','NhanCong'],
+  direction: 'right',
+  numfmt:    'comma',
+  preset:    'custom',
+};
+
+// ============================================================
+// INIT (Office.js)
+// ============================================================
+Office.onReady((info) => {
+  loadSettings();
+
+  if (info.host === Office.HostType.Excel) {
+    setConn(true, 'Excel 365 · Sẵn sàng');
+    if (CFG.url) {
+      loadVatTu();
+    } else {
+      document.getElementById('result-list').innerHTML =
+        '<div class="empty"><div class="e-icon">⚙️</div>Vui lòng cài URL trong tab Cài đặt</div>';
+    }
+  } else {
+    setConn(false, 'Không phải Excel');
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') clearSelection();
+    if (e.ctrlKey && e.key === 'Enter') insertToExcel();
+  });
+});
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function loadSettings() {
+  try {
+    const saved = localStorage.getItem('vattu_cfg');
+    if (saved) CFG = { ...CFG, ...JSON.parse(saved) };
+  } catch(e) {}
+
+  document.getElementById('cfg-url').value       = CFG.url       || '';
+  document.getElementById('cfg-direction').value = CFG.direction || 'right';
+  document.getElementById('cfg-numfmt').value    = CFG.numfmt    || 'comma';
+  document.getElementById('cfg-preset').value    = CFG.preset    || 'custom';
+
+  // Apply col checks
+  document.querySelectorAll('#col-checks input[type=checkbox]').forEach(cb => {
+    cb.checked = CFG.cols.includes(cb.value);
+  });
+}
+
+function saveSettings() {
+  CFG.url       = document.getElementById('cfg-url').value.trim();
+  CFG.direction = document.getElementById('cfg-direction').value;
+  CFG.numfmt    = document.getElementById('cfg-numfmt').value;
+  CFG.preset    = document.getElementById('cfg-preset').value;
+  CFG.cols      = [];
+  document.querySelectorAll('#col-checks input[type=checkbox]:checked').forEach(cb => {
+    CFG.cols.push(cb.value);
+  });
+
+  localStorage.setItem('vattu_cfg', JSON.stringify(CFG));
+  toast('✅ Đã lưu cài đặt!', 'ok');
+
+  if (CFG.url && allVatTu.length === 0) loadVatTu();
+}
+
+function applyPreset() {
+  const preset = document.getElementById('cfg-preset').value;
+  const presets = {
+    baogia:  ['MaVT','TenVT','QuyCach','DVT','GiaBan','NhanCong'],
+    dutoan:  ['MaVT','TenVT','DVT','GiaNhap','GiaBan','NhanCong'],
+    full:    ['MaVT','TenVT','QuyCach','DVT','Brand','NhomHang','GiaNhap','GiaBan','NhanCong','MaNCC'],
+    gianhanh:['MaVT','TenVT','GiaBan'],
+  };
+  if (presets[preset]) {
+    CFG.cols = presets[preset];
+    document.querySelectorAll('#col-checks input[type=checkbox]').forEach(cb => {
+      cb.checked = CFG.cols.includes(cb.value);
+    });
+  }
+}
+
+// ============================================================
+// LOAD DATA từ Google Sheet API
+// ============================================================
+function loadVatTu() {
+  if (!CFG.url) return;
+  showLoading();
+
+  fetch(CFG.url + '?action=getAll')
+    .then(r => r.json())
+    .then(data => {
+      allVatTu = data || [];
+      populateFilters();
+      filtered = allVatTu;
+      renderResults(filtered);
+      setConn(true, `Google Sheet · ${allVatTu.length} vật tư`);
+    })
+    .catch(err => {
+      showError('Lỗi kết nối Google Sheet. Kiểm tra URL trong Cài đặt.');
+      setConn(false, 'Lỗi kết nối');
+    });
+}
+
+function loadTonKho() {
+  if (!CFG.url || allTonKho.length) { renderTonKho(allTonKho); return; }
+
+  document.getElementById('tk-list').innerHTML = '<div class="spinner"></div>';
+
+  fetch(CFG.url + '?action=getTonKho')
+    .then(r => r.json())
+    .then(data => {
+      allTonKho = data || [];
+      renderTonKho(allTonKho);
+    })
+    .catch(() => {
+      document.getElementById('tk-list').innerHTML =
+        '<div class="empty"><div class="e-icon">⚠️</div>Lỗi tải tồn kho</div>';
+    });
+}
+
+// ============================================================
+// SEARCH & FILTER
+// ============================================================
+function onSearchInput() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(doSearch, 300);
+}
+
+function onSearchKey(e) {
+  if (e.key === 'Enter') doSearch();
+}
+
+function doSearch() {
+  const kw    = document.getElementById('search-input').value.toLowerCase().trim();
+  const nhom  = document.getElementById('filter-nhom').value;
+  const brand = document.getElementById('filter-brand').value;
+
+  filtered = allVatTu.filter(v => {
+    const matchKw = !kw ||
+      (v.MaVT    && v.MaVT.toLowerCase().includes(kw))    ||
+      (v.TenVT   && v.TenVT.toLowerCase().includes(kw))   ||
+      (v.QuyCach && v.QuyCach.toLowerCase().includes(kw)) ||
+      (v.Brand   && v.Brand.toLowerCase().includes(kw))   ||
+      (v.NhomHang && v.NhomHang.toLowerCase().includes(kw));
+    const matchNhom  = !nhom  || v.NhomHang === nhom;
+    const matchBrand = !brand || v.Brand     === brand;
+    return matchKw && matchNhom && matchBrand;
+  });
+
+  renderResults(filtered);
+}
+
+function populateFilters() {
+  const nhomSel  = document.getElementById('filter-nhom');
+  const brandSel = document.getElementById('filter-brand');
+  const nhoms    = [...new Set(allVatTu.map(v => v.NhomHang).filter(Boolean))].sort();
+  const brands   = [...new Set(allVatTu.map(v => v.Brand).filter(Boolean))].sort();
+
+  nhomSel.innerHTML  = '<option value="">Tất cả nhóm</option>'  + nhoms.map(n  => `<option value="${n}">${n}</option>`).join('');
+  brandSel.innerHTML = '<option value="">Tất cả brand</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+}
+
+function filterTonKho() {
+  const kw = document.getElementById('tk-search').value.toLowerCase();
+  const res = allTonKho.filter(v =>
+    !kw || (v.MaVT && v.MaVT.toLowerCase().includes(kw)) ||
+           (v.TenVT && v.TenVT.toLowerCase().includes(kw))
+  );
+  renderTonKho(res);
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderResults(data) {
+  const meta = document.getElementById('result-meta');
+  const list = document.getElementById('result-list');
+
+  if (!data.length) {
+    meta.style.display = 'none';
+    list.innerHTML = '<div class="empty"><div class="e-icon">🔍</div>Không tìm thấy kết quả nào</div>';
+    return;
+  }
+
+  meta.style.display = 'flex';
+  document.getElementById('result-count').textContent = `${data.length} kết quả`;
+
+  list.innerHTML = data.slice(0, 80).map(v => `
+    <div class="vt-card ${selected.has(v.MaVT) ? 'selected' : ''}"
+         id="card-${v.MaVT.replace(/[^a-z0-9]/gi,'_')}"
+         onclick="toggleSelect('${v.MaVT}',event)"
+         ondblclick="openDrawer('${v.MaVT}')">
+      <div class="vt-card-check">${selected.has(v.MaVT) ? '✓' : ''}</div>
+      <div class="vt-code">${v.MaVT || ''}</div>
+      <div class="vt-name">${v.TenVT || ''}</div>
+      <div class="vt-tags">
+        ${v.QuyCach  ? `<span class="vt-tag">${v.QuyCach}</span>`  : ''}
+        ${v.DVT      ? `<span class="vt-tag">${v.DVT}</span>`      : ''}
+        ${v.Brand    ? `<span class="vt-tag">${v.Brand}</span>`    : ''}
+        ${v.NhomHang ? `<span class="vt-tag">${v.NhomHang}</span>` : ''}
+      </div>
+      <div class="vt-prices">
+        <div class="price-item">
+          <div class="price-lbl">Giá nhập</div>
+          <div class="price-val">${fmtNum(v.GiaNhap)}</div>
+        </div>
+        <div class="price-item">
+          <div class="price-lbl">Giá bán</div>
+          <div class="price-val green">${fmtNum(v.GiaBan)}</div>
+        </div>
+        <div class="price-item">
+          <div class="price-lbl">Nhân công</div>
+          <div class="price-val">${fmtNum(v.NhanCong)}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  if (data.length > 80) {
+    list.innerHTML += `<div class="empty" style="padding:10px">... và ${data.length - 80} kết quả khác. Lọc thêm để thu hẹp.</div>`;
+  }
+}
+
+function renderTonKho(data) {
+  const list = document.getElementById('tk-list');
+  if (!data.length) {
+    list.innerHTML = '<div class="empty"><div class="e-icon">📦</div>Không có dữ liệu tồn kho</div>';
+    return;
+  }
+  list.innerHTML = data.map(v => {
+    const sapHet = v.TrangThai && v.TrangThai.includes('⚠');
+    return `
+      <div class="vt-card" style="${sapHet ? 'border-color:#f5a0a5;background:#fff8f8' : ''}">
+        <div class="vt-code">${v.MaVT || ''}</div>
+        <div class="vt-name" style="padding-right:0">${v.TenVT || ''}</div>
+        <div class="vt-prices" style="margin-top:5px">
+          <div class="price-item">
+            <div class="price-lbl">Tồn hiện tại</div>
+            <div class="price-val ${sapHet ? '' : 'green'}" style="${sapHet ? 'color:var(--red)' : ''}">
+              ${fmtNum(v.TonHienTai)} ${v.DVT || ''}
+            </div>
+          </div>
+          <div class="price-item">
+            <div class="price-lbl">Tổng nhập</div>
+            <div class="price-val">${fmtNum(v.TongNhap)}</div>
+          </div>
+          <div class="price-item">
+            <div class="price-lbl">Tổng xuất</div>
+            <div class="price-val">${fmtNum(v.TongXuat)}</div>
+          </div>
+        </div>
+        ${sapHet ? '<div style="font-size:10px;color:var(--red);margin-top:4px;font-weight:600">⚠ Sắp hết hàng</div>' : ''}
+      </div>`;
+  }).join('');
+}
+
+// ============================================================
+// SELECTION
+// ============================================================
+function toggleSelect(maVT, e) {
+  // Nếu double-click → drawer, không toggle
+  if (e && e.detail === 2) return;
+
+  if (selected.has(maVT)) {
+    selected.delete(maVT);
+  } else {
+    selected.add(maVT);
+  }
+  updateSelectionUI();
+  // Update card UI
+  const id = 'card-' + maVT.replace(/[^a-z0-9]/gi,'_');
+  const card = document.getElementById(id);
+  if (card) {
+    card.classList.toggle('selected', selected.has(maVT));
+    card.querySelector('.vt-card-check').textContent = selected.has(maVT) ? '✓' : '';
+  }
+}
+
+function toggleSelectAll() {
+  const btn = document.getElementById('sel-all-btn');
+  if (selected.size === filtered.length) {
+    selected.clear();
+    btn.textContent = 'Chọn tất cả';
+  } else {
+    filtered.forEach(v => selected.add(v.MaVT));
+    btn.textContent = 'Bỏ chọn tất cả';
+  }
+  renderResults(filtered);
+  updateSelectionUI();
+}
+
+function clearSelection() {
+  selected.clear();
+  updateSelectionUI();
+  renderResults(filtered);
+}
+
+function updateSelectionUI() {
+  const bar = document.getElementById('sel-bar');
+  const cnt = document.getElementById('sel-count');
+  cnt.textContent = selected.size;
+  bar.classList.toggle('show', selected.size > 0);
+}
+
+function setMode(mode, el) {
+  insertMode = mode;
+  document.querySelectorAll('.insert-mode-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ============================================================
+// DRAWER (Chi tiết vật tư)
+// ============================================================
+function openDrawer(maVT) {
+  drawerVT = allVatTu.find(v => v.MaVT === maVT);
+  if (!drawerVT) return;
+
+  document.getElementById('drawer-title').textContent = drawerVT.TenVT || maVT;
+  document.getElementById('drawer-detail').innerHTML = `
+    <div class="detail-item"><div class="detail-lbl">Mã VT</div><div class="detail-val accent">${drawerVT.MaVT||''}</div></div>
+    <div class="detail-item"><div class="detail-lbl">Quy Cách</div><div class="detail-val">${drawerVT.QuyCach||'—'}</div></div>
+    <div class="detail-item"><div class="detail-lbl">Đơn Vị</div><div class="detail-val">${drawerVT.DVT||'—'}</div></div>
+    <div class="detail-item"><div class="detail-lbl">Brand</div><div class="detail-val">${drawerVT.Brand||'—'}</div></div>
+    <div class="detail-item"><div class="detail-lbl">Nhóm hàng</div><div class="detail-val">${drawerVT.NhomHang||'—'}</div></div>
+    <div class="detail-item"><div class="detail-lbl">Mã NCC</div><div class="detail-val">${drawerVT.MaNCC||'—'}</div></div>
+    <div class="detail-item" style="grid-column:1/-1">
+      <div class="detail-lbl">Giá nhập / Giá bán / Nhân công</div>
+      <div class="detail-val">${fmtNum(drawerVT.GiaNhap)} / <span style="color:var(--green)">${fmtNum(drawerVT.GiaBan)}</span> / ${fmtNum(drawerVT.NhanCong)}</div>
+    </div>
+    ${drawerVT.GhiChu ? `<div class="detail-item" style="grid-column:1/-1">
+      <div class="detail-lbl">Ghi chú</div>
+      <div class="detail-val" style="font-family:var(--font);font-size:12px">${drawerVT.GhiChu}</div>
+    </div>` : ''}
+  `;
+  document.getElementById('drawer').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  drawerVT = null;
+}
+
+// ============================================================
+// INSERT TO EXCEL (Office.js)
+// ============================================================
+async function insertToExcel() {
+  if (selected.size === 0) {
+    toast('⚠️ Chưa chọn vật tư nào!', 'err');
+    return;
+  }
+
+  const btn = document.getElementById('insert-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang chèn...';
+
+  try {
+    const selItems = allVatTu.filter(v => selected.has(v.MaVT));
+    const cols     = CFG.cols.filter(c => c); // Cột đã cấu hình
+
+    await Excel.run(async (context) => {
+      const sheet     = context.workbook.worksheets.getActiveWorksheet();
+      const selection = context.workbook.getSelectedRange();
+      selection.load(['rowIndex', 'columnIndex', 'address']);
+      await context.sync();
+
+      const startRow = selection.rowIndex;
+      const startCol = selection.columnIndex;
+
+      if (insertMode === 'sel') {
+        // Chèn vào ô đang chọn, ngang phải
+        const rowData = buildRowData(selItems[0], cols);
+        const range   = sheet.getCell(startRow, startCol)
+                             .getResizedRange(0, rowData.length - 1);
+        range.values = [rowData];
+        applyNumFormat(range, cols, context);
+
+      } else if (insertMode === 'row' && selItems.length === 1) {
+        // 1 vật tư, chèn ngang từ ô đang chọn
+        const rowData = buildRowData(selItems[0], cols);
+        const range   = sheet.getCell(startRow, startCol)
+                             .getResizedRange(0, rowData.length - 1);
+        range.values = [rowData];
+        applyNumFormat(range, cols, context);
+
+      } else if (insertMode === 'row' && selItems.length > 1) {
+        // Nhiều vật tư, mỗi cái 1 cột (ngang)
+        // → Thực tế dùng 'col' mode cho nhiều VT
+        const matrix = selItems.map(v => buildRowData(v, cols));
+        const range  = sheet.getCell(startRow, startCol)
+                            .getResizedRange(matrix.length - 1, cols.length - 1);
+        range.values = matrix;
+        applyNumFormat(range, cols, context);
+
+      } else {
+        // Chèn xuống dòng
+        const matrix = selItems.map(v => buildRowData(v, cols));
+        const range  = sheet.getCell(startRow, startCol)
+                            .getResizedRange(matrix.length - 1, cols.length - 1);
+        range.values = matrix;
+        applyNumFormat(range, cols, context);
+      }
+
+      await context.sync();
+    });
+
+    toast(`✅ Đã chèn ${selected.size} vật tư vào Excel!`, 'ok');
+    clearSelection();
+
+  } catch (err) {
+    toast('❌ Lỗi khi chèn: ' + err.message, 'err');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↳ Chèn vào Excel';
+  }
+}
+
+// Chèn 1 field cụ thể (từ drawer)
+async function insertSingleField(field) {
+  if (!drawerVT) return;
+  try {
+    await Excel.run(async (context) => {
+      const selection = context.workbook.getSelectedRange();
+      selection.values = [[drawerVT[field] || '']];
+      if (['GiaNhap','GiaBan','NhanCong'].includes(field)) {
+        selection.numberFormat = [['#,##0']];
+      }
+      await context.sync();
+    });
+    toast(`✅ Đã chèn ${field === 'GiaBan' ? 'giá bán' : field}: ${fmtNum(drawerVT[field])}`, 'ok');
+    closeDrawer();
+  } catch (err) {
+    toast('❌ ' + err.message, 'err');
+  }
+}
+
+// Chèn 1 dòng đầy đủ (từ drawer)
+async function insertSingleRow() {
+  if (!drawerVT) return;
+  const cols    = CFG.cols;
+  const rowData = buildRowData(drawerVT, cols);
+  try {
+    await Excel.run(async (context) => {
+      const sheet     = context.workbook.worksheets.getActiveWorksheet();
+      const selection = context.workbook.getSelectedRange();
+      selection.load(['rowIndex', 'columnIndex']);
+      await context.sync();
+      const range = sheet.getCell(selection.rowIndex, selection.columnIndex)
+                         .getResizedRange(0, rowData.length - 1);
+      range.values = [rowData];
+      applyNumFormat(range, cols, context);
+      await context.sync();
+    });
+    toast(`✅ Đã chèn: ${drawerVT.TenVT}`, 'ok');
+    closeDrawer();
+  } catch (err) {
+    toast('❌ ' + err.message, 'err');
+  }
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function buildRowData(vt, cols) {
+  return cols.map(col => {
+    const val = vt[col];
+    if (['GiaNhap','GiaBan','NhanCong'].includes(col)) {
+      return parseFloat(val) || 0;
+    }
+    return val || '';
+  });
+}
+
+function applyNumFormat(range, cols, context) {
+  // Áp dụng number format cho cột tiền
+  const fmt = CFG.numfmt === 'comma' ? '#,##0' :
+              CFG.numfmt === 'vnd'   ? '#,##0 \\đ' : '0';
+  cols.forEach((col, i) => {
+    if (['GiaNhap','GiaBan','NhanCong'].includes(col)) {
+      // format cột i
+      const colRange = range.getColumn(i);
+      colRange.numberFormat = [[fmt]];
+    }
+  });
+}
+
+function fmtNum(n) {
+  if (!n || isNaN(n) || Number(n) === 0) return '—';
+  return Number(n).toLocaleString('vi-VN');
+}
+
+function setConn(ok, text) {
+  const dot    = document.getElementById('conn-dot');
+  const status = document.getElementById('conn-status');
+  dot.style.background   = ok ? '#4ade80' : '#f87171';
+  dot.style.boxShadow    = ok ? '0 0 6px #4ade80' : 'none';
+  status.textContent     = text;
+}
+
+function showLoading() {
+  document.getElementById('result-list').innerHTML = '<div class="spinner"></div>';
+  document.getElementById('result-meta').style.display = 'none';
+}
+
+function showError(msg) {
+  document.getElementById('result-list').innerHTML =
+    `<div class="empty"><div class="e-icon">⚠️</div>${msg}</div>`;
+}
+
+function toast(msg, type = 'info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className   = `toast show toast-${type}`;
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ============================================================
+// TAB SWITCH
+// ============================================================
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'tonkho') loadTonKho();
+}
+</script>
+</body>
+</html>
