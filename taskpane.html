@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VATTU · Taskpane</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0f1a;--surface:#0f1729;--surface2:#141e35;
+  --border:#1e2d4a;--border2:#253554;
+  --accent:#38bdf8;--accent2:#a78bfa;--green:#4ade80;
+  --yellow:#fbbf24;--red:#f87171;--muted:#64748b;
+  --text:#e2e8f0;--text2:#94a3b8;
+  --font:'Be Vietnam Pro',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);
+     font-size:13px;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+button{cursor:pointer;font-family:var(--font);border:none;outline:none}
+input,select,textarea{font-family:var(--font);outline:none}
+
+/* ── LOGIN ── */
+#login{position:fixed;inset:0;background:var(--bg);z-index:999;
+       display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:24px}
+.login-logo{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);letter-spacing:3px;margin-bottom:4px}
+.fg{display:flex;flex-direction:column;gap:5px;width:100%}
+.fg label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.fg input,.fg select{background:var(--surface2);border:1px solid var(--border2);color:var(--text);
+                      padding:8px 12px;border-radius:6px;font-size:13px;width:100%}
+.fg input:focus{border-color:var(--accent)}
+.login-btn{width:100%;padding:10px;background:var(--accent);color:#0a0f1a;border-radius:6px;
+           font-size:13px;font-weight:700;margin-top:4px}
+.err-msg{color:var(--red);font-size:11px;text-align:center}
+
+/* ── TOP STRIP ── */
+#top{flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border);
+     display:flex;align-items:center;gap:6px;padding:6px 10px}
+#top .logo{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);letter-spacing:2px}
+#top .sep{flex:1}
+#top .user-chip{font-size:10px;color:var(--muted);background:var(--surface2);
+                padding:2px 8px;border-radius:10px}
+#btn-out{font-size:10px;background:none;color:var(--muted);padding:2px 6px;border-radius:4px}
+#btn-out:hover{color:var(--red)}
+
+/* ── SHEET TABS ── */
+#sheet-tabs{flex-shrink:0;display:flex;overflow-x:auto;border-bottom:1px solid var(--border);
+            background:var(--surface);gap:2px;padding:0 6px}
+#sheet-tabs::-webkit-scrollbar{height:3px}
+#sheet-tabs::-webkit-scrollbar-thumb{background:var(--border2)}
+.stab{padding:7px 12px;font-size:11px;font-weight:600;border-bottom:2px solid transparent;
+      color:var(--muted);cursor:pointer;white-space:nowrap;background:none;transition:all .15s}
+.stab:hover{color:var(--text2)}
+.stab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* ── TOOLBAR ── */
+#toolbar{flex-shrink:0;background:var(--surface2);border-bottom:1px solid var(--border);
+         padding:6px 10px;display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.btn{padding:4px 10px;border-radius:5px;font-size:11px;font-weight:600;transition:all .15s}
+.btn-accent{background:var(--accent);color:#0a0f1a}
+.btn-accent:hover{background:#7dd3fc}
+.btn-ghost{background:var(--surface);border:1px solid var(--border2);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-green{background:var(--green);color:#0a0f1a}
+.btn-green:hover{background:#86efac}
+.btn-sep{width:1px;height:18px;background:var(--border2);margin:0 2px;align-self:center}
+
+/* ── PRESET BAR ── */
+#preset-bar{flex-shrink:0;background:var(--bg);border-bottom:1px solid var(--border);
+            padding:5px 10px;display:flex;gap:5px;align-items:center;overflow-x:auto;flex-wrap:wrap}
+#preset-bar::-webkit-scrollbar{height:3px}
+.preset-chip{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;
+             cursor:pointer;border:1px solid var(--border2);color:var(--text2);background:var(--surface);
+             white-space:nowrap;transition:all .15s}
+.preset-chip:hover{border-color:var(--accent2);color:var(--accent2)}
+.preset-chip.active{background:rgba(167,139,250,.15);border-color:var(--accent2);color:var(--accent2)}
+.preset-chip.add-chip{color:var(--muted);border-style:dashed}
+.preset-chip.add-chip:hover{color:var(--accent);border-color:var(--accent)}
+#preset-label{font-size:10px;color:var(--muted);white-space:nowrap}
+
+/* ── SEARCH ── */
+#search-wrap{flex-shrink:0;padding:7px 10px;background:var(--surface);border-bottom:1px solid var(--border);
+             display:flex;gap:6px;align-items:center}
+.sw-input{flex:1;display:flex;align-items:center;gap:6px;background:var(--bg);
+          border:1px solid var(--border2);border-radius:6px;padding:5px 10px}
+.sw-input:focus-within{border-color:var(--accent)}
+.sw-input input{flex:1;background:none;border:none;color:var(--text);font-size:12px}
+.sw-input input::placeholder{color:var(--muted)}
+#search-count{font-size:10px;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
+
+/* ── TABLE ── */
+#table-wrap{flex:1;overflow:auto;position:relative}
+#table-wrap::-webkit-scrollbar{width:5px;height:5px}
+#table-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+#data-table{border-collapse:collapse;width:max-content;min-width:100%;font-size:12px}
+#data-table thead th{
+  position:sticky;top:0;z-index:5;background:var(--surface2);
+  border-bottom:2px solid var(--border2);padding:6px 10px;
+  text-align:left;white-space:nowrap;color:var(--muted);
+  font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  user-select:none;cursor:pointer;
+}
+#data-table thead th:hover{color:var(--accent)}
+#data-table thead th.asc::after{content:" ▲"}
+#data-table thead th.desc::after{content:" ▼"}
+#data-table tbody tr{border-bottom:1px solid var(--border);cursor:pointer}
+#data-table tbody tr:hover{background:rgba(56,189,248,.05)}
+#data-table tbody tr.selected{background:rgba(167,139,250,.12)!important}
+#data-table td{padding:5px 10px;white-space:nowrap;max-width:280px;
+               overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+#data-table td:first-child{font-family:var(--mono);font-size:11px;color:var(--accent)}
+.empty-msg{padding:40px;text-align:center;color:var(--muted)}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border2);
+         border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── STATUS ── */
+#statusbar{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+           padding:3px 10px;font-size:10px;color:var(--muted);font-family:var(--mono);
+           display:flex;gap:12px;align-items:center}
+#st-sel{color:var(--accent2)}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;
+         align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal-box{background:var(--surface);border:1px solid var(--border2);border-radius:10px;
+           padding:20px;width:92%;max-width:460px;max-height:90vh;overflow-y:auto}
+.modal-box::-webkit-scrollbar{width:4px}
+.modal-box h3{font-size:14px;font-weight:700;margin-bottom:16px;color:var(--accent)}
+.modal-box .fg{margin-bottom:12px}
+.modal-box textarea{width:100%;background:var(--bg);border:1px solid var(--border2);
+                    color:var(--text);border-radius:6px;padding:8px;font-size:12px;
+                    font-family:var(--mono);resize:vertical;min-height:80px}
+.modal-box textarea:focus{border-color:var(--accent)}
+.mf{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.preset-list-item{
+  display:flex;align-items:center;gap:8px;padding:6px 8px;
+  background:var(--surface2);border-radius:6px;margin-bottom:6px;font-size:12px;
+}
+.pli-name{flex:1;font-weight:600;color:var(--text2)}
+.pli-cols{flex:2;font-size:11px;color:var(--muted);font-family:var(--mono);
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pli-btn{font-size:10px;padding:2px 7px;border-radius:4px}
+/* ── SETUP HINT ── */
+#setup-bar{flex-shrink:0;background:rgba(56,189,248,.06);border-bottom:1px solid rgba(56,189,248,.15);
+           padding:4px 10px;font-size:10px;color:var(--muted);display:none;align-items:center;gap:6px}
+#setup-url-input{flex:1;background:var(--bg);border:1px solid var(--border2);color:var(--text);
+                  padding:3px 8px;border-radius:4px;font-size:11px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-logo">VATTU · SYS</div>
+  <div style="color:var(--muted);font-size:11px;margin-bottom:8px">Đăng nhập để tra cứu dữ liệu</div>
+  <div class="fg"><label>Email</label><input id="l-email" type="email" placeholder="ten@cth.net.vn"></div>
+  <div class="fg"><label>Mật khẩu</label><input id="l-pw" type="password" placeholder="••••••••"></div>
+  <button class="login-btn" onclick="doLogin()">Đăng nhập</button>
+  <div class="err-msg" id="l-err"></div>
+  <!-- Setup URL -->
+  <div id="setup-bar" style="display:flex;flex-direction:column;gap:6px;width:100%;margin-top:8px">
+    <div style="font-size:10px;color:var(--muted)">⚙️ URL Web App (chỉ cần nhập 1 lần)</div>
+    <div style="display:flex;gap:6px">
+      <input id="setup-url-input" placeholder="https://script.google.com/...">
+      <button class="btn btn-ghost" onclick="saveUrl()" style="font-size:11px;white-space:nowrap">Lưu</button>
+    </div>
+  </div>
+  <button class="btn btn-ghost" style="margin-top:4px;font-size:10px" onclick="toggleSetup()">⚙ Cài đặt URL</button>
+</div>
+
+<!-- TOP STRIP -->
+<div id="top" style="display:none">
+  <span class="logo">VATTU.SYS</span>
+  <div class="sep"></div>
+  <span class="user-chip" id="top-user"></span>
+  <button id="btn-out" onclick="doLogout()">✕</button>
+</div>
+
+<!-- SHEET TABS -->
+<div id="sheet-tabs" style="display:none"></div>
+
+<!-- TOOLBAR -->
+<div id="toolbar" style="display:none">
+  <button class="btn btn-accent" onclick="copySelected('full')">📋 Copy đầy đủ</button>
+  <button class="btn btn-accent" onclick="copySelected('preset')">✂ Copy theo Preset</button>
+  <div class="btn-sep"></div>
+  <button class="btn btn-ghost" onclick="selectAll()">Chọn tất cả</button>
+  <button class="btn btn-ghost" onclick="clearSel()">Bỏ chọn</button>
+  <div class="btn-sep"></div>
+  <button class="btn btn-ghost" onclick="refreshCurrent()">↺</button>
+</div>
+
+<!-- PRESET BAR -->
+<div id="preset-bar" style="display:none">
+  <span id="preset-label">Preset:</span>
+</div>
+
+<!-- SEARCH -->
+<div id="search-wrap" style="display:none">
+  <div class="sw-input">
+    <span style="color:var(--muted);font-size:13px">⌕</span>
+    <input id="search-input" placeholder="Tìm kiếm... (dùng * ngăn cách, vd: ppr*vesbo)" oninput="onSearch()">
+    <button id="btn-clear-search" onclick="clearSearch()" style="background:none;color:var(--muted);font-size:12px;display:none">✕</button>
+  </div>
+  <span id="search-count"></span>
+</div>
+
+<!-- TABLE -->
+<div id="table-wrap">
+  <div class="empty-msg">Đăng nhập để bắt đầu</div>
+</div>
+
+<!-- STATUS -->
+<div id="statusbar" style="display:none">
+  <span id="st-rows">—</span>
+  <span id="st-sel"></span>
+  <span style="flex:1"></span>
+  <span style="color:var(--border2)">Ctrl+Click: multi · Shift+Click: range</span>
+</div>
+
+<!-- MODAL PRESET MANAGER -->
+<div class="overlay" id="modal-preset">
+  <div class="modal-box">
+    <h3>⚙ Quản lý Preset</h3>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">
+      Sheet hiện tại: <strong id="preset-sheet-name" style="color:var(--accent)"></strong>
+    </div>
+    <div id="preset-list-container"></div>
+    <hr style="border-color:var(--border);margin:12px 0">
+    <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--text2)">Thêm / Sửa Preset</div>
+    <input type="hidden" id="preset-edit-idx" value="-1">
+    <div class="fg"><label>Tên Preset</label>
+      <input id="preset-name-inp" placeholder="Báo giá, Nhập kho, ...">
+    </div>
+    <div class="fg"><label>Cột copy (tên cột phân cách bởi Tab hoặc xuống dòng)</label>
+      <textarea id="preset-cols-inp" placeholder="MaVT&#10;TenVT&#10;NhomHang&#10;MaLabour"></textarea>
+    </div>
+    <div class="fg"><label>Thứ tự cột trong Preset</label>
+      <div style="font-size:11px;color:var(--muted)">Nhập tên cột theo thứ tự muốn copy — không cần phải theo thứ tự gốc</div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeModal('modal-preset')">Hủy</button>
+      <button class="btn btn-accent" onclick="savePreset()">💾 Lưu Preset</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRM -->
+<div class="overlay" id="modal-confirm">
+  <div class="modal-box" style="max-width:320px">
+    <h3 id="confirm-title">Xác nhận</h3>
+    <p id="confirm-msg" style="color:var(--text2);font-size:13px;margin-bottom:16px"></p>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeModal('modal-confirm')">Hủy</button>
+      <button class="btn btn-green" id="confirm-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════════════
+var LS_URL     = "vattu_api_url";
+var LS_TOKEN   = "vattu_token";
+var LS_USER    = "vattu_user";
+var LS_PRESETS = "vattu_presets";   // { sheetName: [ {name, cols:[]} ] }
+
+function getApiUrl() { try { return localStorage.getItem(LS_URL) || ""; } catch(e){ return ""; } }
+function saveApiUrl(u) { try { localStorage.setItem(LS_URL, u); } catch(e){} }
+function getToken() { try { return localStorage.getItem(LS_TOKEN) || null; } catch(e){ return null; } }
+function setToken(t) { try { localStorage.setItem(LS_TOKEN, t || ""); } catch(e){} }
+function getUser() { try { return JSON.parse(localStorage.getItem(LS_USER) || "null"); } catch(e){ return null; } }
+function setUser(u) { try { localStorage.setItem(LS_USER, JSON.stringify(u)); } catch(e){} }
+function getPresets() { try { return JSON.parse(localStorage.getItem(LS_PRESETS) || "{}"); } catch(e){ return {}; } }
+function savePresets(p) { try { localStorage.setItem(LS_PRESETS, JSON.stringify(p)); } catch(e){} }
+
+// ════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════
+var S = {
+  token:        null,
+  user:         null,
+  sheets:       [],         // [{ name, headers, rows }]
+  sheetData:    {},         // { name: { headers, rows, filtered } }
+  currentSheet: null,
+  sortState:    {},         // { sheetName: { col, dir } }
+  activePreset: {},         // { sheetName: idx or null }
+  selected:     new Set(),  // row indices in filtered
+  lastClickIdx: null,
+};
+
+var _loaded    = {};
+var _dSearchFn = null;
+
+// ════════════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════════════
+function removeAccents(s) {
+  return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/đ/g,"d").replace(/Đ/g,"D").toLowerCase();
+}
+
+function matchKeywords(obj, raw) {
+  if (!raw) return true;
+  var hay   = removeAccents(Object.values(obj).join(" "));
+  var parts = removeAccents(raw).split("*").map(function(p){ return p.trim(); }).filter(Boolean);
+  return parts.every(function(p){ return hay.indexOf(p) >= 0; });
+}
+
+function debounce(fn, ms) {
+  var t; return function(){ clearTimeout(t); t = setTimeout(fn, ms); };
+}
+
+function fmt(v) {
+  if (v === null || v === undefined || v === "") return "";
+  if (v instanceof Date) return v.toLocaleDateString("vi-VN");
+  if (typeof v === "number") return v.toLocaleString("vi-VN",{maximumFractionDigits:4});
+  return String(v);
+}
+
+function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function escA(s){ return String(s||"").replace(/"/g,"&quot;"); }
+
+// ════════════════════════════════════════════════════════════════
+// API CALL (fetch → doPost)
+// ════════════════════════════════════════════════════════════════
+function apiCall(body, onOk, onErr) {
+  var url = getApiUrl();
+  if (!url) { if(onErr) onErr({message:"Chưa cài đặt URL API!"}); return; }
+  fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res){ if(onOk) onOk(res); })
+  .catch(function(e){ if(onErr) onErr(e); else showToast("Lỗi: " + e.message,"error"); });
+}
+
+// ════════════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════════════
+var _toastEl = null;
+function showToast(msg, type) {
+  if (_toastEl && _toastEl.parentNode) _toastEl.parentNode.removeChild(_toastEl);
+  var el = document.createElement("div");
+  el.style.cssText = "position:fixed;bottom:50px;left:50%;transform:translateX(-50%);" +
+    "padding:8px 18px;border-radius:16px;font-size:12px;z-index:9999;white-space:nowrap;" +
+    (type==="error" ? "background:#2d0a0a;color:#f87171;border:1px solid #f87171"
+                    : "background:#052e16;color:#4ade80;border:1px solid #4ade80");
+  el.textContent = msg;
+  document.body.appendChild(el);
+  _toastEl = el;
+  setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 3000);
+}
+
+// ════════════════════════════════════════════════════════════════
+// SETUP URL
+// ════════════════════════════════════════════════════════════════
+function toggleSetup() {
+  var el = document.getElementById("setup-bar");
+  el.style.display = el.style.display === "none" ? "flex" : "none";
+  if (el.style.display === "flex") {
+    var inp = document.getElementById("setup-url-input");
+    inp.value = getApiUrl();
+    inp.focus();
+  }
+}
+function saveUrl() {
+  var u = document.getElementById("setup-url-input").value.trim();
+  if (u) { saveApiUrl(u); showToast("Đã lưu URL!","success"); }
+}
+
+// ════════════════════════════════════════════════════════════════
+// LOGIN / LOGOUT
+// ════════════════════════════════════════════════════════════════
+document.getElementById("l-email").addEventListener("keydown",function(e){ if(e.key==="Enter") document.getElementById("l-pw").focus(); });
+document.getElementById("l-pw").addEventListener("keydown",function(e){ if(e.key==="Enter") doLogin(); });
+
+// Auto-login nếu có token stored
+(function(){
+  var tok = getToken(); var usr = getUser();
+  if (tok && usr) { S.token=tok; S.user=usr; onLoggedIn(); }
+})();
+
+function doLogin() {
+  var email = document.getElementById("l-email").value.trim();
+  var pw    = document.getElementById("l-pw").value.trim();
+  var err   = document.getElementById("l-err");
+  if (!email || !pw) { err.textContent="Nhập đầy đủ email và mật khẩu!"; return; }
+  err.textContent = "Đang đăng nhập...";
+  apiCall({ action:"login", email:email, password:pw }, function(res){
+    if (!res.success) { err.textContent = res.message; return; }
+    S.token = res.token; S.user = res.user;
+    setToken(res.token); setUser(res.user);
+    onLoggedIn();
+  }, function(e){ err.textContent = "Lỗi: " + e.message; });
+}
+
+function onLoggedIn() {
+  document.getElementById("login").style.display = "none";
+  ["top","sheet-tabs","toolbar","preset-bar","search-wrap","statusbar"].forEach(function(id){
+    document.getElementById(id).style.display = "";
+  });
+  document.getElementById("top-user").textContent =
+    (S.user.HoTen || S.user.Email || "User") + " · " + (S.user.PhanQuyen || "");
+  loadSheetList();
+}
+
+function doLogout() {
+  setToken(null); setUser(null);
+  S.token=null; S.user=null; S.sheets=[]; S.sheetData={}; _loaded={};
+  document.getElementById("login").style.display = "flex";
+  ["top","sheet-tabs","toolbar","preset-bar","search-wrap","statusbar"].forEach(function(id){
+    document.getElementById(id).style.display = "none";
+  });
+  document.getElementById("table-wrap").innerHTML = '<div class="empty-msg">Đăng nhập để bắt đầu</div>';
+  document.getElementById("sheet-tabs").innerHTML = "";
+}
+
+// ════════════════════════════════════════════════════════════════
+// SHEET LIST
+// ════════════════════════════════════════════════════════════════
+function loadSheetList() {
+  document.getElementById("table-wrap").innerHTML = '<div class="empty-msg"><div class="spinner"></div> Đang tải danh mục...</div>';
+  apiCall({ action:"getSheets", session:S.token }, function(res){
+    if (!res.success) { showToast(res.message,"error"); return; }
+    S.sheets = res.sheets || [];
+    buildTabs();
+    if (S.sheets.length > 0) switchSheet(S.sheets[0].name);
+  }, function(e){ showToast("Lỗi: "+e.message,"error"); });
+}
+
+function buildTabs() {
+  var tc = document.getElementById("sheet-tabs");
+  tc.innerHTML = "";
+  S.sheets.forEach(function(sh){
+    var btn = document.createElement("button");
+    btn.className = "stab";
+    btn.id = "tab-" + sh.name;
+    btn.textContent = sh.name;
+    btn.onclick = function(){ switchSheet(sh.name); };
+    tc.appendChild(btn);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// SWITCH SHEET
+// ════════════════════════════════════════════════════════════════
+function switchSheet(sheetName) {
+  document.querySelectorAll(".stab").forEach(function(b){ b.classList.remove("active"); });
+  var tb = document.getElementById("tab-" + sheetName);
+  if (tb) tb.classList.add("active");
+
+  S.currentSheet = sheetName;
+  S.selected.clear();
+  S.lastClickIdx = null;
+  updateSelStatus();
+
+  // Reset search
+  document.getElementById("search-input").value = "";
+  document.getElementById("btn-clear-search").style.display = "none";
+
+  // Build preset bar cho sheet này
+  buildPresetBar(sheetName);
+
+  if (!_loaded[sheetName]) {
+    document.getElementById("table-wrap").innerHTML =
+      '<div class="empty-msg"><div class="spinner"></div> Đang tải ' + sheetName + '...</div>';
+    apiCall({ action:"getData", sheet:sheetName, session:S.token }, function(res){
+      if (!res.success) { showToast(res.message,"error"); return; }
+      S.sheetData[sheetName] = { headers: res.headers, rows: res.data, filtered: res.data };
+      _loaded[sheetName] = true;
+      renderTable();
+      updateSearchCount();
+    }, function(e){ showToast("Lỗi: "+e.message,"error"); });
+  } else {
+    var sd = S.sheetData[sheetName];
+    sd.filtered = sd.rows;
+    renderTable();
+    updateSearchCount();
+  }
+}
+
+function refreshCurrent() {
+  if (!S.currentSheet) return;
+  _loaded[S.currentSheet] = false;
+  delete S.sheetData[S.currentSheet];
+  switchSheet(S.currentSheet);
+}
+
+// ════════════════════════════════════════════════════════════════
+// RENDER TABLE
+// ════════════════════════════════════════════════════════════════
+function renderTable() {
+  var sh = S.currentSheet;
+  if (!sh) return;
+  var sd = S.sheetData[sh];
+  if (!sd) return;
+  var rows    = sd.filtered || sd.rows;
+  var headers = sd.headers;
+  var wrap    = document.getElementById("table-wrap");
+
+  if (!rows || !rows.length) {
+    wrap.innerHTML = '<div class="empty-msg">Không có dữ liệu</div>';
+    document.getElementById("st-rows").textContent = "0 dòng";
+    return;
+  }
+
+  var ss = S.sortState[sh] || {};
+
+  var thead = "<thead><tr>";
+  headers.forEach(function(h, i){
+    var cls = ss.col===i ? ss.dir : "";
+    thead += '<th class="' + cls + '" onclick="sortBy(' + i + ')">' + esc(h) + '</th>';
+  });
+  thead += "</tr></thead>";
+
+  var tbody = "<tbody>";
+  rows.forEach(function(row, ri){
+    var selCls = S.selected.has(ri) ? " selected" : "";
+    tbody += '<tr class="' + selCls + '" onclick="onRowClick(event,' + ri + ')">';
+    headers.forEach(function(h){
+      tbody += '<td title="' + escA(fmt(row[h])) + '">' + esc(fmt(row[h])) + '</td>';
+    });
+    tbody += '</tr>';
+  });
+  tbody += "</tbody>";
+
+  wrap.innerHTML = '<table id="data-table">' + thead + tbody + '</table>';
+  document.getElementById("st-rows").textContent =
+    rows.length + (rows.length !== sd.rows.length ? " / " + sd.rows.length : "") + " dòng";
+}
+
+// ════════════════════════════════════════════════════════════════
+// ROW SELECTION
+// ════════════════════════════════════════════════════════════════
+function onRowClick(e, ri) {
+  if (e.ctrlKey || e.metaKey) {
+    // Toggle
+    if (S.selected.has(ri)) S.selected.delete(ri);
+    else S.selected.add(ri);
+    S.lastClickIdx = ri;
+  } else if (e.shiftKey && S.lastClickIdx !== null) {
+    // Range
+    var a = Math.min(S.lastClickIdx, ri), b = Math.max(S.lastClickIdx, ri);
+    for (var i = a; i <= b; i++) S.selected.add(i);
+  } else {
+    S.selected.clear();
+    S.selected.add(ri);
+    S.lastClickIdx = ri;
+  }
+  // Refresh tr classes
+  var trs = document.querySelectorAll("#data-table tbody tr");
+  trs.forEach(function(tr, idx){
+    tr.classList.toggle("selected", S.selected.has(idx));
+  });
+  updateSelStatus();
+}
+
+function selectAll() {
+  var sd = S.sheetData[S.currentSheet];
+  if (!sd) return;
+  S.selected.clear();
+  (sd.filtered || sd.rows).forEach(function(r,i){ S.selected.add(i); });
+  document.querySelectorAll("#data-table tbody tr").forEach(function(tr){ tr.classList.add("selected"); });
+  updateSelStatus();
+}
+
+function clearSel() {
+  S.selected.clear(); S.lastClickIdx = null;
+  document.querySelectorAll("#data-table tbody tr").forEach(function(tr){ tr.classList.remove("selected"); });
+  updateSelStatus();
+}
+
+function updateSelStatus() {
+  var n = S.selected.size;
+  document.getElementById("st-sel").textContent = n > 0 ? n + " đã chọn" : "";
+}
+
+// ════════════════════════════════════════════════════════════════
+// SORT
+// ════════════════════════════════════════════════════════════════
+function sortBy(colIdx) {
+  var sh = S.currentSheet;
+  var sd = S.sheetData[sh];
+  if (!sd) return;
+  var cur = S.sortState[sh] || {};
+  var dir = (cur.col === colIdx && cur.dir === "asc") ? "desc" : "asc";
+  S.sortState[sh] = { col: colIdx, dir: dir };
+  var h = sd.headers[colIdx];
+  sd.filtered = (sd.filtered||sd.rows).slice().sort(function(a,b){
+    var va=a[h], vb=b[h];
+    if (va===vb) return 0;
+    if (typeof va==="number"&&typeof vb==="number") return dir==="asc"?va-vb:vb-va;
+    var sa=removeAccents(fmt(va)), sb=removeAccents(fmt(vb));
+    return dir==="asc"?sa.localeCompare(sb):sb.localeCompare(sa);
+  });
+  S.selected.clear(); S.lastClickIdx=null;
+  renderTable(); updateSearchCount();
+}
+
+// ════════════════════════════════════════════════════════════════
+// SEARCH
+// ════════════════════════════════════════════════════════════════
+_dSearchFn = debounce(function(){
+  var sh = S.currentSheet;
+  var sd = S.sheetData[sh];
+  if (!sd) return;
+  var kw = document.getElementById("search-input").value.trim();
+  document.getElementById("btn-clear-search").style.display = kw ? "block" : "none";
+  sd.filtered = kw ? sd.rows.filter(function(r){ return matchKeywords(r,kw); }) : sd.rows;
+  // re-apply sort
+  var ss = S.sortState[sh];
+  if (ss) {
+    var h = sd.headers[ss.col];
+    sd.filtered = sd.filtered.slice().sort(function(a,b){
+      var va=a[h],vb=b[h]; if(va===vb) return 0;
+      if(typeof va==="number"&&typeof vb==="number") return ss.dir==="asc"?va-vb:vb-va;
+      var sa=removeAccents(fmt(va)),sb=removeAccents(fmt(vb));
+      return ss.dir==="asc"?sa.localeCompare(sb):sb.localeCompare(sa);
+    });
+  }
+  S.selected.clear(); S.lastClickIdx=null;
+  renderTable(); updateSearchCount();
+}, 200);
+
+function onSearch() { if(_dSearchFn) _dSearchFn(); }
+
+function clearSearch() {
+  document.getElementById("search-input").value = "";
+  document.getElementById("btn-clear-search").style.display = "none";
+  if(_dSearchFn) _dSearchFn();
+}
+
+function updateSearchCount() {
+  var sh = S.currentSheet; if(!sh) return;
+  var sd = S.sheetData[sh]; if(!sd) return;
+  var shown = (sd.filtered||sd.rows).length;
+  var total = sd.rows.length;
+  document.getElementById("search-count").textContent =
+    shown === total ? total + " dòng" : shown + "/" + total;
+}
+
+// ════════════════════════════════════════════════════════════════
+// PRESET
+// ════════════════════════════════════════════════════════════════
+function buildPresetBar(sheetName) {
+  var bar = document.getElementById("preset-bar");
+  bar.innerHTML = '<span id="preset-label" style="font-size:10px;color:var(--muted);white-space:nowrap">Preset:</span>';
+
+  var presets = getPresets();
+  var list    = (presets[sheetName] || []);
+  var active  = S.activePreset[sheetName];
+
+  list.forEach(function(p, i){
+    var chip = document.createElement("div");
+    chip.className = "preset-chip" + (active === i ? " active" : "");
+    chip.textContent = p.name;
+    chip.onclick = function(){ setActivePreset(sheetName, i); };
+    bar.appendChild(chip);
+  });
+
+  // Nút thêm
+  var add = document.createElement("div");
+  add.className = "preset-chip add-chip";
+  add.textContent = "＋ Thêm";
+  add.onclick = function(){ openPresetModal(sheetName); };
+  bar.appendChild(add);
+
+  // Nút quản lý nếu có preset
+  if (list.length > 0) {
+    var mgr = document.createElement("div");
+    mgr.className = "preset-chip add-chip";
+    mgr.textContent = "⚙ Quản lý";
+    mgr.onclick = function(){ openPresetModal(sheetName, true); };
+    bar.appendChild(mgr);
+  }
+}
+
+function setActivePreset(sheetName, idx) {
+  S.activePreset[sheetName] = (S.activePreset[sheetName] === idx) ? null : idx;
+  buildPresetBar(sheetName);
+}
+
+function openPresetModal(sheetName, manage) {
+  document.getElementById("preset-sheet-name").textContent = sheetName;
+  document.getElementById("preset-edit-idx").value = "-1";
+  document.getElementById("preset-name-inp").value = "";
+  document.getElementById("preset-cols-inp").value = "";
+  renderPresetList(sheetName);
+  openModal("modal-preset");
+}
+
+function renderPresetList(sheetName) {
+  var cont    = document.getElementById("preset-list-container");
+  var presets = getPresets();
+  var list    = (presets[sheetName] || []);
+  if (!list.length) { cont.innerHTML = '<div style="font-size:12px;color:var(--muted)">Chưa có preset nào</div>'; return; }
+  cont.innerHTML = list.map(function(p, i){
+    return '<div class="preset-list-item">' +
+      '<span class="pli-name">' + esc(p.name) + '</span>' +
+      '<span class="pli-cols">' + esc((p.cols||[]).join(" · ")) + '</span>' +
+      '<button class="btn btn-ghost pli-btn" onclick="editPreset(' + JSON.stringify(sheetName) + ',' + i + ')">Sửa</button>' +
+      '<button class="btn btn-ghost pli-btn" style="color:var(--red)" onclick="deletePreset(' + JSON.stringify(sheetName) + ',' + i + ')">✕</button>' +
+    '</div>';
+  }).join("");
+}
+
+function editPreset(sheetName, idx) {
+  var p = (getPresets()[sheetName] || [])[idx];
+  if (!p) return;
+  document.getElementById("preset-edit-idx").value = idx;
+  document.getElementById("preset-name-inp").value = p.name;
+  document.getElementById("preset-cols-inp").value = (p.cols||[]).join("\n");
+}
+
+function deletePreset(sheetName, idx) {
+  var p = getPresets();
+  if (!p[sheetName]) return;
+  p[sheetName].splice(idx, 1);
+  savePresets(p);
+  if (S.activePreset[sheetName] === idx) delete S.activePreset[sheetName];
+  renderPresetList(sheetName);
+  buildPresetBar(sheetName);
+}
+
+function savePreset() {
+  var sheetName = document.getElementById("preset-sheet-name").textContent;
+  var idx       = parseInt(document.getElementById("preset-edit-idx").value);
+  var name      = document.getElementById("preset-name-inp").value.trim();
+  var colsRaw   = document.getElementById("preset-cols-inp").value.trim();
+  if (!name || !colsRaw) { showToast("Nhập tên và danh sách cột!","error"); return; }
+  var cols = colsRaw.split(/[\n\t]+/).map(function(c){ return c.trim(); }).filter(Boolean);
+  var p = getPresets();
+  if (!p[sheetName]) p[sheetName] = [];
+  if (idx >= 0 && idx < p[sheetName].length) p[sheetName][idx] = { name:name, cols:cols };
+  else p[sheetName].push({ name:name, cols:cols });
+  savePresets(p);
+  renderPresetList(sheetName);
+  buildPresetBar(sheetName);
+  document.getElementById("preset-edit-idx").value = "-1";
+  document.getElementById("preset-name-inp").value = "";
+  document.getElementById("preset-cols-inp").value = "";
+  showToast("Đã lưu Preset!","success");
+}
+
+// ════════════════════════════════════════════════════════════════
+// COPY
+// ════════════════════════════════════════════════════════════════
+function copySelected(mode) {
+  var sh = S.currentSheet;
+  var sd = S.sheetData[sh];
+  if (!sd || !S.selected.size) { showToast("Chưa chọn dòng nào!","error"); return; }
+
+  // Xác định cột cần copy
+  var cols;
+  if (mode === "preset") {
+    var ap      = S.activePreset[sh];
+    var presets = getPresets();
+    var pl      = (presets[sh] || []);
+    if (ap === null || ap === undefined || !pl[ap]) {
+      showToast("Chưa chọn Preset! Chọn một preset trong thanh Preset.","error"); return;
+    }
+    cols = pl[ap].cols;
+  } else {
+    cols = sd.headers;
+  }
+
+  var rows = Array.from(S.selected).sort(function(a,b){ return a-b; })
+    .map(function(ri){ return (sd.filtered||sd.rows)[ri]; })
+    .filter(Boolean);
+
+  var text = rows.map(function(row){
+    return cols.map(function(col){
+      var v = row[col]; return fmt(v);
+    }).join("\t");
+  }).join("\n");
+
+  navigator.clipboard.writeText(text)
+    .then(function(){ showToast("✓ Đã copy " + rows.length + " dòng (" + cols.length + " cột)","success"); })
+    .catch(function(){ showToast("Không copy được — cần HTTPS","error"); });
+}
+
+// ════════════════════════════════════════════════════════════════
+// MODAL
+// ════════════════════════════════════════════════════════════════
+function openModal(id)  { document.getElementById(id).classList.add("open"); }
+function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+
+// Close on backdrop click
+document.querySelectorAll(".overlay").forEach(function(ov){
+  ov.addEventListener("click", function(e){ if(e.target===ov) closeModal(ov.id); });
+});
+</script>
+</body>
+</html>
