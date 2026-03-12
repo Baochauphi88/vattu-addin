@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VậtTư.DB v3.2</title>
+<style>
+/* ════════════════════════════════════════════════════════
+   TOKENS — giữ nguyên màu sắc cũ
+   ════════════════════════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#1D4ED8;--blue-lt:#EFF4FF;--blue-md:#BFDBFE;
+  --green:#059669;--green-lt:#ECFDF5;
+  --amber:#D97706;--amber-lt:#FFFBEB;
+  --red:#DC2626;--red-lt:#FEF2F2;
+  --slate:#1E293B;--slate-md:#475569;--slate-lt:#F8FAFC;
+  --gray:#F1F5F9;--border:#E2E8F0;--white:#fff;
+  --radius:8px;--shadow:0 1px 4px rgba(0,0,0,.12);
+}
+body{font-family:Arial,sans-serif;font-size:13px;background:var(--gray);color:var(--slate);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── HEADER ── */
+#app-header{
+  background:linear-gradient(135deg,var(--blue),#1e40af);
+  color:#fff;padding:8px 12px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:100;
+}
+.logo{font-weight:700;font-size:14px;letter-spacing:.5px}
+.logo span{color:#93c5fd;font-size:11px;font-weight:400;margin-left:5px}
+#user-info{font-size:10px;color:#bfdbfe;text-align:right;line-height:1.5}
+#user-info strong{color:#fff;font-size:11px}
+#btn-logout{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  color:#fff;padding:2px 8px;border-radius:5px;cursor:pointer;font-size:10px;margin-top:2px;display:block}
+#btn-logout:hover{background:rgba(255,255,255,.25)}
+
+/* ── LOGIN ── */
+#login-screen{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#1e3a5f,#1D4ED8);z-index:999;
+}
+.login-box{
+  background:#fff;border-radius:14px;padding:28px 24px;width:310px;
+  box-shadow:0 8px 32px rgba(0,0,0,.3);
+}
+.login-box h2{text-align:center;color:var(--blue);margin-bottom:4px;font-size:17px}
+.login-box p{text-align:center;color:var(--slate-md);font-size:11px;margin-bottom:18px}
+.login-box input{
+  width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:7px;
+  font-size:13px;margin-bottom:10px;outline:none;font-family:inherit;
+}
+.login-box input:focus{border-color:var(--blue)}
+.remember-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.remember-row label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--slate-md);cursor:pointer}
+.remember-row button{background:none;border:none;font-size:11px;color:var(--blue);cursor:pointer;text-decoration:underline;padding:0}
+#btn-login{
+  width:100%;padding:9px;background:var(--blue);color:#fff;
+  border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;
+}
+#btn-login:hover{background:#1e40af}
+#login-error{color:var(--red);font-size:11px;text-align:center;margin-top:7px;min-height:16px}
+.setup-box{margin-top:12px;border-top:1px solid var(--border);padding-top:12px;display:none}
+.setup-box label{font-size:10px;color:var(--slate-md);display:block;margin-bottom:4px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.setup-row{display:flex;gap:6px}
+.setup-row input{flex:1;padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit;outline:none}
+.setup-row input:focus{border-color:var(--blue)}
+.setup-row button{padding:6px 10px;background:var(--blue);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700}
+#btn-toggle-setup{background:none;border:none;font-size:10px;color:var(--slate-md);cursor:pointer;width:100%;text-align:center;margin-top:8px}
+
+/* ── TABS ── */
+#tabs{
+  flex-shrink:0;display:flex;background:#fff;border-bottom:2px solid var(--border);
+  overflow-x:auto;z-index:90;
+}
+#tabs::-webkit-scrollbar{height:3px}
+#tabs::-webkit-scrollbar-thumb{background:var(--blue-md)}
+.tab-btn{
+  padding:8px 13px;border:none;background:none;color:var(--slate-md);
+  cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;
+  border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;
+  font-family:inherit;
+}
+.tab-btn:hover{color:var(--blue);background:var(--blue-lt)}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue);background:var(--blue-lt)}
+
+/* ── TOOLBAR ── */
+#toolbar{
+  flex-shrink:0;background:#fff;border-bottom:1px solid var(--border);
+  padding:6px 10px;display:flex;gap:5px;align-items:center;flex-wrap:wrap;
+}
+.btn{padding:4px 10px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-blue{background:var(--blue);color:#fff;border:none}
+.btn-blue:hover{background:#1e40af}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--slate-md)}
+.btn-ghost:hover{border-color:var(--blue);color:var(--blue)}
+.btn-green{background:var(--green);color:#fff;border:none}
+.btn-green:hover{background:#047857}
+#toolbar-sep{width:1px;height:18px;background:var(--border);margin:0 3px;align-self:center}
+#sel-count{font-size:11px;color:var(--slate-md);margin-left:auto}
+#sel-count strong{color:var(--blue)}
+
+/* ── PRESET BAR ── */
+#preset-bar{
+  flex-shrink:0;background:var(--gray);border-bottom:1px solid var(--border);
+  padding:4px 10px;display:flex;gap:4px;align-items:center;overflow-x:auto;
+}
+#preset-bar::-webkit-scrollbar{height:2px}
+.preset-lbl{font-size:10px;color:var(--slate-md);white-space:nowrap;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.preset-chip{
+  padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;
+  border:1.5px solid var(--border);color:var(--slate-md);background:#fff;white-space:nowrap;
+  transition:all .12s;
+}
+.preset-chip:hover{border-color:var(--blue);color:var(--blue)}
+.preset-chip.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.preset-add{border-style:dashed;color:var(--slate-md)}
+.preset-add:hover{border-color:var(--blue);color:var(--blue)}
+
+/* ── SEARCH ── */
+#search-bar{
+  flex-shrink:0;background:#fff;border-bottom:1px solid var(--border);
+  padding:7px 10px;display:flex;gap:6px;align-items:center;
+}
+#search-bar input{
+  flex:1;padding:6px 10px 6px 30px;border:1.5px solid var(--border);border-radius:var(--radius);
+  font-size:12px;outline:none;font-family:inherit;background:#F8FAFC url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 8px center;
+}
+#search-bar input:focus{border-color:var(--blue);background-color:#fff}
+#search-hint{font-size:10px;color:var(--slate-md);white-space:nowrap}
+#search-count{font-size:10px;color:var(--blue);font-weight:700;white-space:nowrap}
+#btn-clear-search{background:none;border:none;cursor:pointer;color:var(--slate-md);font-size:14px;padding:0 2px;display:none}
+#btn-clear-search:hover{color:var(--red)}
+
+/* ── CONTENT ── */
+#content-wrap{flex:1;overflow-y:auto;padding:8px 10px}
+#content-wrap::-webkit-scrollbar{width:5px}
+#content-wrap::-webkit-scrollbar-thumb{background:var(--blue-md);border-radius:3px}
+
+/* ── TABLE (dạng cũ dùng card-list, giữ nguyên) ── */
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* ── CARD ── */
+.vt-card{
+  background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+  padding:8px 11px;margin-bottom:6px;cursor:pointer;transition:all .15s;
+  border-left:3px solid var(--blue);
+}
+.vt-card:hover{border-color:var(--blue);box-shadow:var(--shadow);transform:translateX(2px)}
+.vt-card.selected{border-left-color:var(--green);background:var(--green-lt)}
+.vt-header{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.vt-code{font-weight:700;color:var(--blue);font-size:11px;background:var(--blue-lt);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.vt-name{font-weight:600;color:var(--slate);flex:1;font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vt-brand{font-size:10px;color:var(--slate-md);background:var(--gray);padding:1px 5px;border-radius:3px;white-space:nowrap}
+.vt-meta{font-size:11px;color:var(--slate-md);display:flex;gap:8px;flex-wrap:wrap}
+.vt-meta span{display:flex;align-items:center;gap:2px}
+.badge{font-size:10px;padding:1px 5px;border-radius:3px;font-weight:700}
+.badge-ok{background:var(--green-lt);color:var(--green)}
+.badge-warn{background:var(--amber-lt);color:var(--amber)}
+.badge-off{background:var(--red-lt);color:var(--red)}
+
+/* ── TABLE VIEW (alternative khi sheet không phải CODE_MAT) ── */
+.data-table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);background:#fff;margin-bottom:8px}
+.data-table{border-collapse:collapse;width:max-content;min-width:100%;font-size:12px}
+.data-table thead th{
+  position:sticky;top:0;background:#F1F5F9;border-bottom:2px solid var(--border);
+  padding:6px 10px;text-align:left;white-space:nowrap;color:var(--slate-md);
+  font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;
+  cursor:pointer;user-select:none;
+}
+.data-table thead th:hover{color:var(--blue)}
+.data-table thead th.asc::after{content:" ▲"}
+.data-table thead th.desc::after{content:" ▼"}
+.data-table tbody tr{border-bottom:1px solid var(--border);cursor:pointer}
+.data-table tbody tr:hover{background:var(--blue-lt)}
+.data-table tbody tr.selected{background:var(--green-lt)!important}
+.data-table td{padding:5px 10px;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.data-table td:first-child{font-weight:700;color:var(--blue);font-size:11px}
+
+/* ── EMPTY / LOADING ── */
+.empty-state{padding:32px;text-align:center;color:var(--slate-md)}
+.empty-icon{font-size:32px;margin-bottom:8px}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);
+  border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── STATUS BAR ── */
+#statusbar{
+  flex-shrink:0;background:#fff;border-top:1px solid var(--border);
+  padding:3px 10px;font-size:10px;color:var(--slate-md);
+  display:flex;gap:10px;align-items:center;
+}
+#st-rows{font-weight:700;color:var(--blue)}
+#st-sel{color:var(--green);font-weight:700}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:55px;left:50%;transform:translateX(-50%) translateY(10px);
+  background:var(--slate);color:#fff;padding:7px 16px;border-radius:20px;
+  font-size:12px;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;z-index:9999;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── MODAL OVERLAY ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:12px;padding:18px;width:92%;max-width:440px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.25)}
+.modal-box::-webkit-scrollbar{width:4px}
+.modal-box h3{font-size:14px;font-weight:700;margin-bottom:14px;color:var(--blue)}
+.mf{display:flex;gap:7px;justify-content:flex-end;margin-top:14px}
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:11px}
+.fg label{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--slate-md)}
+.fg input,.fg select{padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none}
+.fg input:focus{border-color:var(--blue)}
+
+/* Preset modal col picker */
+.col-picker-wrap{display:flex;gap:8px}
+.col-picker-side{flex:1}
+.col-picker-side .side-lbl{font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--slate-md);margin-bottom:4px}
+.col-pool{min-height:70px;max-height:140px;overflow-y:auto;background:#F8FAFC;border:1px solid var(--border);border-radius:6px;padding:4px;display:flex;flex-wrap:wrap;gap:3px}
+.col-sel-list{min-height:70px;max-height:140px;overflow-y:auto;background:#F8FAFC;border:1.5px dashed var(--blue-md);border-radius:6px;padding:4px;display:flex;flex-direction:column;gap:3px}
+.col-tag{padding:2px 7px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:600;transition:all .1s}
+.col-tag-avail{background:#fff;border:1px solid var(--border);color:var(--slate-md)}
+.col-tag-avail:hover{border-color:var(--blue);color:var(--blue)}
+.col-tag-sel{background:var(--blue-lt);border:1px solid var(--blue-md);color:var(--blue);display:flex;align-items:center;gap:4px}
+.col-tag-sel .drag-handle{color:var(--slate-md);font-size:10px;cursor:grab}
+.col-tag-sel .rm{cursor:pointer;color:var(--slate-md);font-size:11px}
+.col-tag-sel .rm:hover{color:var(--red)}
+.pli{display:flex;align-items:center;gap:6px;padding:5px 7px;background:var(--gray);border-radius:6px;margin-bottom:5px;font-size:11px}
+.pli-name{font-weight:700;color:var(--slate);min-width:70px}
+.pli-cols{flex:1;color:var(--slate-md);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pli-acts{display:flex;gap:4px}
+.pli-btn{padding:2px 7px;border-radius:4px;font-size:10px;cursor:pointer;font-weight:700;border:none;font-family:inherit}
+.pli-edit{background:var(--blue-lt);color:var(--blue)}
+.pli-del{background:var(--red-lt);color:var(--red)}
+
+/* Modal đổi MK */
+#modal-changepw .modal-box{max-width:320px}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="login-screen">
+  <div class="login-box">
+    <h2>🗄 VậtTư.DB</h2>
+    <p>v3.2 · Tra cứu vật tư</p>
+    <input id="l-email" type="email" placeholder="Email tài khoản" autocomplete="username">
+    <input id="l-pw" type="password" placeholder="Mật khẩu" autocomplete="current-password">
+    <div class="remember-row">
+      <label><input type="checkbox" id="l-remember" style="accent-color:var(--blue)"> Nhớ tài khoản</label>
+      <button onclick="openChangePw()">Đổi mật khẩu</button>
+    </div>
+    <button id="btn-login" onclick="doLogin()">Đăng nhập</button>
+    <div id="login-error"></div>
+    <button id="btn-toggle-setup" onclick="toggleSetup()">⚙ Cài đặt URL Apps Script</button>
+    <div class="setup-box" id="setup-box">
+      <label>URL Web App (Apps Script)</label>
+      <div class="setup-row">
+        <input id="setup-url" placeholder="https://script.google.com/...">
+        <button onclick="saveSetup()">Lưu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── HEADER ── -->
+<div id="app-header" style="display:none">
+  <div>
+    <div class="logo">🗄 VậtTư.DB<span>v3.2</span></div>
+  </div>
+  <div>
+    <div id="user-info">
+      <strong id="user-name"></strong>
+      <span id="user-role"></span>
+    </div>
+    <button id="btn-logout" onclick="doLogout()">Đăng xuất</button>
+  </div>
+</div>
+
+<!-- ── TABS ── -->
+<div id="tabs" style="display:none"></div>
+
+<!-- ── TOOLBAR ── -->
+<div id="toolbar" style="display:none">
+  <button class="btn btn-blue" onclick="copySelected('full')">📋 Copy</button>
+  <button class="btn btn-green" onclick="copySelected('preset')" id="btn-copy-preset">✂ Preset</button>
+  <div id="toolbar-sep"></div>
+  <button class="btn btn-ghost" onclick="selAll()">Chọn tất cả</button>
+  <button class="btn btn-ghost" onclick="selClear()">Bỏ chọn</button>
+  <button class="btn btn-ghost" onclick="refreshCurrent()" title="Làm mới dữ liệu">↺</button>
+  <span id="sel-count" style="display:none"><strong id="sel-n">0</strong> đã chọn</span>
+</div>
+
+<!-- ── PRESET BAR ── -->
+<div id="preset-bar" style="display:none">
+  <span class="preset-lbl">Preset:</span>
+</div>
+
+<!-- ── SEARCH ── -->
+<div id="search-bar" style="display:none">
+  <input id="search-input" placeholder="Tìm kiếm... dùng * giữa từ khóa (vd: ppr*vesbo*d20)" oninput="onSearch()">
+  <button id="btn-clear-search" onclick="clearSearch()">✕</button>
+  <span id="search-count"></span>
+</div>
+
+<!-- ── CONTENT ── -->
+<div id="content-wrap" style="display:none">
+  <!-- Panels tạo động -->
+</div>
+
+<!-- ── STATUS BAR ── -->
+<div id="statusbar" style="display:none">
+  <span id="st-rows">—</span>
+  <span id="st-sel" style="display:none"></span>
+  <span style="flex:1"></span>
+  <span style="color:var(--border);font-size:9px">Shift: range · Ctrl: multi</span>
+</div>
+
+<!-- ── TOAST ── -->
+<div id="toast"></div>
+
+<!-- ── MODAL PRESET ── -->
+<div class="overlay" id="modal-preset">
+  <div class="modal-box">
+    <h3>⚙ Preset — <span id="pm-sheet" style="color:var(--blue)"></span></h3>
+    <div id="pm-list"></div>
+    <hr style="border-color:var(--border);margin:10px 0">
+    <input type="hidden" id="pm-idx" value="-1">
+    <div class="fg"><label>Tên preset</label><input id="pm-name" placeholder="Báo giá, Dự toán..."></div>
+    <div class="col-picker-wrap">
+      <div class="col-picker-side">
+        <div class="side-lbl">Cột gốc — click thêm</div>
+        <div class="col-pool" id="pm-pool"></div>
+      </div>
+      <div class="col-picker-side">
+        <div class="side-lbl">Đã chọn — kéo sắp xếp</div>
+        <div class="col-sel-list" id="pm-sel"></div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closePM()">Hủy/Đóng</button>
+      <button class="btn btn-blue" onclick="savePreset()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL ĐỔI MK ── -->
+<div class="overlay" id="modal-changepw">
+  <div class="modal-box" style="max-width:300px">
+    <h3>🔑 Đổi mật khẩu</h3>
+    <div class="fg"><label>Email</label><input id="cp-email" type="email" placeholder="ten@cth.net.vn"></div>
+    <div class="fg"><label>Mật khẩu hiện tại</label><input id="cp-old" type="password" placeholder="••••••••"></div>
+    <div class="fg"><label>Mật khẩu mới</label><input id="cp-new" type="password" placeholder="Ít nhất 4 ký tự"></div>
+    <div class="fg"><label>Xác nhận mật khẩu mới</label><input id="cp-cf" type="password" placeholder="Nhập lại mật khẩu mới"></div>
+    <div id="cp-err" style="color:var(--red);font-size:11px;min-height:16px;text-align:center"></div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeOverlay('modal-changepw')">Hủy</button>
+      <button class="btn btn-blue" onclick="doChangePw()">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════════════
+var LS = {
+  URL:     "vattu_v3_url",
+  TOKEN:   "vattu_v3_token",
+  USER:    "vattu_v3_user",
+  PRESETS: "vattu_v3_presets",
+  REMEMBER:"vattu_v3_remember",
+};
+// Sheet bị bỏ qua (không tạo tab)
+var SKIP_SHEETS = ["HD", "1_EMPLOYEE", "LOG"];
+
+// ════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════
+var S = {
+  token:        ls(LS.TOKEN)  || null,
+  user:         lsJ(LS.USER)  || null,
+  apiUrl:       ls(LS.URL)    || "",
+  sheets:       [],   // [{ name, headers, rows, _sel, _sort }]
+  sheetMap:     {},   // { name: sheetObj }
+  current:      null, // sheet name
+  activePreset: {},   // { sheetName: idx|null }
+};
+
+function ls(k)    { try { return localStorage.getItem(k); } catch(e){ return null; } }
+function lsJ(k)   { try { return JSON.parse(localStorage.getItem(k)||"null"); } catch(e){ return null; } }
+function lsSet(k,v){ try { localStorage.setItem(k, typeof v==="string"?v:JSON.stringify(v)); } catch(e){} }
+function lsDel(k)  { try { localStorage.removeItem(k); } catch(e){} }
+
+function getPresets()   { return lsJ(LS.PRESETS) || {}; }
+function setPresets(p)  { lsSet(LS.PRESETS, p); }
+
+// ════════════════════════════════════════════════════════════════
+// REMOVE ACCENTS — lookup table, NHANH HƠN normalize() ~10x
+// ════════════════════════════════════════════════════════════════
+var _ACC_FROM = "àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ";
+var _ACC_TO   = "aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyydAAAAAAAAAAAAAAAAAEEEEEEEEEEEIIIIIOOOOOOOOOOOOOOOOOUUUUUUUUUUUYYYYYD";
+var _ACC_MAP  = {};
+for (var _i = 0; _i < _ACC_FROM.length; _i++) _ACC_MAP[_ACC_FROM[_i]] = _ACC_TO[_i];
+
+function removeAccents(str) {
+  str = String(str || "");
+  var out = "";
+  for (var i = 0; i < str.length; i++) {
+    var ch = str[i];
+    out += (_ACC_MAP[ch] || ch);
+  }
+  return out.toLowerCase();
+}
+
+// ════════════════════════════════════════════════════════════════
+// API — fetch GET qua Apps Script doGet (CORS-safe)
+// ════════════════════════════════════════════════════════════════
+function apiGet(action, params, onOk, onErr) {
+  if (!S.apiUrl) {
+    if (onErr) onErr({ message: "Chưa cài đặt URL Apps Script!" });
+    return;
+  }
+  var url = S.apiUrl + (S.apiUrl.indexOf("?") >= 0 ? "&" : "?") +
+            "action=" + encodeURIComponent(action) +
+            "&session=" + encodeURIComponent(S.token || "");
+  if (params) {
+    Object.keys(params).forEach(function(k) {
+      url += "&" + encodeURIComponent(k) + "=" + encodeURIComponent(params[k]);
+    });
+  }
+  fetch(url, { method: "GET", redirect: "follow" })
+    .then(function(r) { return r.json(); })
+    .then(function(res) { if (onOk) onOk(res); })
+    .catch(function(e) { if (onErr) onErr(e); else toast("Lỗi: " + e.message); });
+}
+
+// ════════════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════════════
+function fmt(v) {
+  if (v === null || v === undefined || v === "") return "";
+  if (typeof v === "number") return v.toLocaleString("vi-VN");
+  if (v instanceof Date) return v.toLocaleDateString("vi-VN");
+  return String(v);
+}
+function esc(s)  { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function escA(s) { return String(s||"").replace(/"/g,"&quot;"); }
+
+var _toastTimer = null;
+function toast(msg, dur) {
+  var el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function() { el.classList.remove("show"); }, dur || 2500);
+}
+
+function openOverlay(id)  { document.getElementById(id).classList.add("open"); }
+function closeOverlay(id) { document.getElementById(id).classList.remove("open"); }
+document.querySelectorAll(".overlay").forEach(function(ov) {
+  ov.addEventListener("click", function(e) { if (e.target === ov) ov.classList.remove("open"); });
+});
+
+// ════════════════════════════════════════════════════════════════
+// SETUP URL
+// ════════════════════════════════════════════════════════════════
+(function initSetup() {
+  var inp = document.getElementById("setup-url");
+  if (inp && S.apiUrl) inp.value = S.apiUrl;
+})();
+
+function toggleSetup() {
+  var box = document.getElementById("setup-box");
+  box.style.display = box.style.display === "none" ? "block" : "none";
+  if (box.style.display === "block") document.getElementById("setup-url").focus();
+}
+function saveSetup() {
+  var u = document.getElementById("setup-url").value.trim();
+  if (u) { S.apiUrl = u; lsSet(LS.URL, u); toast("Đã lưu URL!"); }
+}
+
+// ════════════════════════════════════════════════════════════════
+// REMEMBER + AUTO LOGIN
+// ════════════════════════════════════════════════════════════════
+(function initRemember() {
+  var saved = lsJ(LS.REMEMBER);
+  if (saved && saved.email) {
+    document.getElementById("l-email").value = saved.email;
+    document.getElementById("l-remember").checked = true;
+  }
+})();
+
+// Auto-login nếu còn token
+(function autoLogin() {
+  if (S.token && S.user) { onLoggedIn(); }
+})();
+
+// ════════════════════════════════════════════════════════════════
+// LOGIN / LOGOUT
+// ════════════════════════════════════════════════════════════════
+document.getElementById("l-email").addEventListener("keydown", function(e) { if (e.key==="Enter") document.getElementById("l-pw").focus(); });
+document.getElementById("l-pw").addEventListener("keydown", function(e)   { if (e.key==="Enter") doLogin(); });
+
+function doLogin() {
+  var email = document.getElementById("l-email").value.trim();
+  var pw    = document.getElementById("l-pw").value;
+  var err   = document.getElementById("login-error");
+  var btn   = document.getElementById("btn-login");
+  if (!email || !pw) { err.textContent = "Nhập đầy đủ email và mật khẩu!"; return; }
+  if (!S.apiUrl)     { err.textContent = "Chưa cài đặt URL Apps Script (⚙ phía dưới)!"; return; }
+  btn.disabled = true; btn.textContent = "Đang đăng nhập..."; err.textContent = "";
+  apiGet("login", { email: email, password: pw }, function(res) {
+    btn.disabled = false; btn.textContent = "Đăng nhập";
+    if (!res.success) { err.textContent = res.message; return; }
+    S.token = res.token; S.user = res.user;
+    lsSet(LS.TOKEN, res.token); lsSet(LS.USER, res.user);
+    // Nhớ tài khoản
+    if (document.getElementById("l-remember").checked) lsSet(LS.REMEMBER, { email: email });
+    else lsDel(LS.REMEMBER);
+    onLoggedIn();
+  }, function(e) {
+    btn.disabled = false; btn.textContent = "Đăng nhập";
+    err.textContent = "Lỗi kết nối: " + e.message;
+  });
+}
+
+function onLoggedIn() {
+  document.getElementById("login-screen").style.display = "none";
+  ["app-header","tabs","toolbar","preset-bar","search-bar","content-wrap","statusbar"].forEach(function(id) {
+    document.getElementById(id).style.display = "";
+  });
+  document.getElementById("user-name").textContent = S.user.HoTen || S.user.Email || "User";
+  document.getElementById("user-role").textContent = (S.user.PhanQuyen||"") + " · " + (S.user.PhongBan||"");
+  loadSheetList();
+}
+
+function doLogout() {
+  lsDel(LS.TOKEN); lsDel(LS.USER);
+  S.token = null; S.user = null; S.sheets = []; S.sheetMap = {};
+  document.getElementById("login-screen").style.display = "flex";
+  ["app-header","tabs","toolbar","preset-bar","search-bar","content-wrap","statusbar"].forEach(function(id) {
+    document.getElementById(id).style.display = "none";
+  });
+  document.getElementById("tabs").innerHTML = "";
+  document.getElementById("content-wrap").innerHTML = "";
+}
+
+// ════════════════════════════════════════════════════════════════
+// ĐỔI MẬT KHẨU
+// ════════════════════════════════════════════════════════════════
+function openChangePw() {
+  var email = document.getElementById("l-email").value;
+  document.getElementById("cp-email").value = email;
+  document.getElementById("cp-err").textContent = "";
+  openOverlay("modal-changepw");
+}
+function doChangePw() {
+  var email = document.getElementById("cp-email").value.trim();
+  var oldPw = document.getElementById("cp-old").value;
+  var newPw = document.getElementById("cp-new").value;
+  var cf    = document.getElementById("cp-cf").value;
+  var errEl = document.getElementById("cp-err");
+  if (!email)       { errEl.textContent="Nhập email!"; return; }
+  if (!oldPw)       { errEl.textContent="Nhập mật khẩu hiện tại!"; return; }
+  if (!newPw)       { errEl.textContent="Nhập mật khẩu mới!"; return; }
+  if (newPw.length < 4) { errEl.textContent="Mật khẩu mới phải ≥ 4 ký tự!"; return; }
+  if (newPw !== cf) { errEl.textContent="Xác nhận không khớp!"; return; }
+  if (newPw===oldPw){ errEl.textContent="Mật khẩu mới phải khác mật khẩu cũ!"; return; }
+  errEl.style.color = "var(--blue)"; errEl.textContent = "Đang xử lý...";
+  apiGet("changePassword", { email:email, oldPw:oldPw, newPw:newPw }, function(res) {
+    errEl.style.color = res.success ? "var(--green)" : "var(--red)";
+    errEl.textContent = res.message;
+    if (res.success) setTimeout(function() { closeOverlay("modal-changepw"); }, 1500);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// LOAD SHEET LIST — auto-detect
+// ════════════════════════════════════════════════════════════════
+function loadSheetList() {
+  document.getElementById("content-wrap").innerHTML =
+    '<div class="empty-state"><div class="spinner"></div> Đang tải danh mục sheet...</div>';
+  apiGet("getSheets", {}, function(res) {
+    if (!res.success) { toast(res.message); return; }
+    var sheets = (res.sheets || []).filter(function(sh) {
+      return SKIP_SHEETS.indexOf(sh.name) < 0;
+    });
+    S.sheets = sheets;
+    S.sheetMap = {};
+    sheets.forEach(function(sh) {
+      sh.rows     = [];
+      sh.filtered = [];
+      sh._sel     = new Set();
+      sh._sort    = null;
+      sh._loaded  = false;
+      S.sheetMap[sh.name] = sh;
+    });
+    buildTabs();
+    if (sheets.length > 0) switchSheet(sheets[0].name);
+  }, function(e) { toast("Lỗi tải sheets: " + e.message); });
+}
+
+// ════════════════════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════════════════════
+function buildTabs() {
+  var tc = document.getElementById("tabs");
+  tc.innerHTML = "";
+  S.sheets.forEach(function(sh) {
+    var btn = document.createElement("button");
+    btn.className = "tab-btn";
+    btn.id = "tab-" + sh.name;
+    btn.textContent = sh.name;
+    btn.onclick = function() { switchSheet(sh.name); };
+    tc.appendChild(btn);
+  });
+}
+
+var _searchTimer = null;
+function onSearch() {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(doFilter, 120);
+}
+function clearSearch() {
+  document.getElementById("search-input").value = "";
+  document.getElementById("btn-clear-search").style.display = "none";
+  doFilter();
+}
+
+// ════════════════════════════════════════════════════════════════
+// SWITCH SHEET
+// ════════════════════════════════════════════════════════════════
+function switchSheet(name) {
+  document.querySelectorAll(".tab-btn").forEach(function(b) { b.classList.remove("active"); });
+  var tb = document.getElementById("tab-" + name);
+  if (tb) tb.classList.add("active");
+  S.current = name;
+
+  // Reset search và selection
+  document.getElementById("search-input").value = "";
+  document.getElementById("btn-clear-search").style.display = "none";
+
+  buildPresetBar(name);
+  ensurePanel(name);
+
+  var sh = S.sheetMap[name];
+  if (!sh._loaded) {
+    showPanelLoading(name);
+    loadSheetData(name);
+  } else {
+    sh.filtered = sh.rows;
+    renderPanel(name);
+    updateStatus(name);
+  }
+}
+
+function ensurePanel(name) {
+  var cw = document.getElementById("content-wrap");
+  document.querySelectorAll(".tab-panel").forEach(function(p) { p.classList.remove("active"); });
+  var p = document.getElementById("panel-" + name);
+  if (!p) {
+    p = document.createElement("div");
+    p.className = "tab-panel";
+    p.id = "panel-" + name;
+    cw.appendChild(p);
+  }
+  p.classList.add("active");
+}
+
+function showPanelLoading(name) {
+  var p = document.getElementById("panel-" + name);
+  if (p) p.innerHTML = '<div class="empty-state"><div class="spinner"></div> Đang tải ' + name + '...</div>';
+}
+
+// ════════════════════════════════════════════════════════════════
+// LOAD DATA — fetch từ Apps Script, pre-compute _search
+// ════════════════════════════════════════════════════════════════
+function loadSheetData(name) {
+  apiGet("getData", { sheet: name }, function(res) {
+    if (!res.success) { toast(res.message); return; }
+    var sh = S.sheetMap[name];
+    sh.headers = res.headers || [];
+    sh.rows    = (res.data || []).map(function(row) {
+      // ── CỘT ẨN _search: join + bỏ dấu 1 LẦN DUY NHẤT ──
+      // Lookup-table removeAccents (không dùng normalize)
+      var vals = sh.headers.map(function(h) { return String(row[h]||""); });
+      row._search = removeAccents(vals.join(" "));
+      return row;
+    });
+    sh.filtered = sh.rows;
+    sh._loaded  = true;
+    renderPanel(name);
+    updateStatus(name);
+  }, function(e) { toast("Lỗi tải " + name + ": " + e.message); });
+}
+
+// ════════════════════════════════════════════════════════════════
+// FILTER — chỉ tìm trên _search (cột ẩn đã pre-computed)
+// ════════════════════════════════════════════════════════════════
+function doFilter() {
+  var name = S.current;
+  if (!name) return;
+  var sh  = S.sheetMap[name];
+  if (!sh || !sh._loaded) return;
+  var raw = document.getElementById("search-input").value.trim();
+  document.getElementById("btn-clear-search").style.display = raw ? "inline" : "none";
+
+  if (!raw) {
+    sh.filtered = sh.rows;
+  } else {
+    // Parse keywords một lần, bỏ dấu một lần
+    var parts = removeAccents(raw).split("*")
+      .map(function(p) { return p.trim(); }).filter(Boolean);
+    sh.filtered = sh.rows.filter(function(row) {
+      var h = row._search;
+      for (var i = 0; i < parts.length; i++) {
+        if (h.indexOf(parts[i]) < 0) return false;
+      }
+      return true;
+    });
+  }
+
+  // Re-apply sort nếu đang sort
+  if (sh._sort) applySortArr(sh);
+  // Reset selection
+  sh._sel.clear();
+  renderPanel(name);
+  updateStatus(name);
+}
+
+// ════════════════════════════════════════════════════════════════
+// RENDER PANEL — card view cho CODE_MAT, table view cho sheet khác
+// ════════════════════════════════════════════════════════════════
+function renderPanel(name) {
+  var sh = S.sheetMap[name];
+  var p  = document.getElementById("panel-" + name);
+  if (!p || !sh) return;
+  var rows = sh.filtered;
+
+  if (!rows || !rows.length) {
+    p.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div>Không có dữ liệu</div>';
+    return;
+  }
+
+  // Quyết định dạng hiển thị:
+  // Sheet có cột TenVT → card view (giống giao diện cũ)
+  // Các sheet khác → table view
+  var headers = sh.headers || [];
+  if (headers.indexOf("TenVT") >= 0) {
+    renderCardView(p, sh, rows);
+  } else {
+    renderTableView(p, sh, rows);
+  }
+}
+
+/* ── CARD VIEW ── */
+function renderCardView(p, sh, rows) {
+  var html = "";
+  rows.forEach(function(row, ri) {
+    var sel = sh._sel.has(ri) ? " selected" : "";
+    var code  = esc(fmt(row[sh.headers[0]] || row.MaVT || ""));
+    var name  = esc(fmt(row.TenVT || ""));
+    var brand = esc(fmt(row.MaBrand || row.DescriptionBrand || ""));
+    var qc    = fmt(row.QuyCach || "");
+    var dvt   = fmt(row.DVT || "");
+    var nhom  = esc(fmt(row.NhomHang || ""));
+    var ts    = esc(fmt(row.TrangThai || ""));
+    var badge = ts === "Đang dùng" ? "badge-ok" : ts === "Ngừng" ? "badge-off" : "badge-warn";
+    html +=
+      '<div class="vt-card' + sel + '" data-ri="' + ri + '" onclick="onCardClick(event,' + ri + ')">' +
+        '<div class="vt-header">' +
+          '<span class="vt-code">' + code + '</span>' +
+          '<span class="vt-name">' + name + '</span>' +
+          (brand ? '<span class="vt-brand">' + brand + '</span>' : '') +
+        '</div>' +
+        '<div class="vt-meta">' +
+          (qc  ? '<span>📐 ' + esc(qc) + '</span>' : '') +
+          (dvt ? '<span>📦 ' + dvt + '</span>' : '') +
+          (nhom? '<span>🏷 ' + nhom + '</span>' : '') +
+          (ts  ? '<span><span class="badge ' + badge + '">' + ts + '</span></span>' : '') +
+        '</div>' +
+      '</div>';
+  });
+  p.innerHTML = html;
+}
+
+/* ── TABLE VIEW ── */
+function renderTableView(p, sh, rows) {
+  var ht = '<div class="data-table-wrap"><table class="data-table"><thead><tr>';
+  var ss = sh._sort || {};
+  sh.headers.forEach(function(h, i) {
+    var cls = ss.col===i ? ss.dir : "";
+    ht += '<th class="' + cls + '" onclick="sortSheet(' + JSON.stringify(sh.name) + ',' + i + ')">' + esc(h) + '</th>';
+  });
+  ht += '</tr></thead><tbody>';
+  rows.forEach(function(row, ri) {
+    var sel = sh._sel.has(ri) ? ' class="selected"' : "";
+    ht += '<tr' + sel + ' onclick="onTableRowClick(event,' + ri + ')">';
+    sh.headers.forEach(function(h) { ht += '<td title="' + escA(fmt(row[h])) + '">' + esc(fmt(row[h])) + '</td>'; });
+    ht += '</tr>';
+  });
+  ht += '</tbody></table></div>';
+  p.innerHTML = ht;
+}
+
+// ════════════════════════════════════════════════════════════════
+// SELECTION
+// ════════════════════════════════════════════════════════════════
+var _lastClick = null;
+
+function onCardClick(e, ri) {
+  var name = S.current; var sh = S.sheetMap[name];
+  handleSel(e, ri, sh);
+  // Toggle card CSS
+  var cards = document.querySelectorAll("#panel-" + name + " .vt-card");
+  cards.forEach(function(c, i) { c.classList.toggle("selected", sh._sel.has(i)); });
+  updateStatus(name);
+}
+function onTableRowClick(e, ri) {
+  var name = S.current; var sh = S.sheetMap[name];
+  handleSel(e, ri, sh);
+  var trs = document.querySelectorAll("#panel-" + name + " tbody tr");
+  trs.forEach(function(tr, i) { tr.classList.toggle("selected", sh._sel.has(i)); });
+  updateStatus(name);
+}
+
+function handleSel(e, ri, sh) {
+  if (e.ctrlKey || e.metaKey) {
+    if (sh._sel.has(ri)) sh._sel.delete(ri);
+    else sh._sel.add(ri);
+    _lastClick = ri;
+  } else if (e.shiftKey && _lastClick !== null) {
+    var a = Math.min(_lastClick, ri), b = Math.max(_lastClick, ri);
+    for (var i = a; i <= b; i++) sh._sel.add(i);
+  } else {
+    sh._sel.clear(); sh._sel.add(ri); _lastClick = ri;
+  }
+}
+
+function selAll() {
+  var sh = S.sheetMap[S.current]; if (!sh) return;
+  sh.filtered.forEach(function(_, i) { sh._sel.add(i); });
+  document.querySelectorAll("#panel-" + S.current + " .vt-card, #panel-" + S.current + " tbody tr")
+    .forEach(function(el) { el.classList.add("selected"); });
+  updateStatus(S.current);
+}
+function selClear() {
+  var sh = S.sheetMap[S.current]; if (!sh) return;
+  sh._sel.clear(); _lastClick = null;
+  document.querySelectorAll("#panel-" + S.current + " .selected")
+    .forEach(function(el) { el.classList.remove("selected"); });
+  updateStatus(S.current);
+}
+
+// ════════════════════════════════════════════════════════════════
+// COPY
+// ════════════════════════════════════════════════════════════════
+function copySelected(mode) {
+  var name = S.current; var sh = S.sheetMap[name];
+  if (!sh || !sh._sel.size) { toast("Chưa chọn dòng nào!"); return; }
+
+  var cols;
+  if (mode === "preset") {
+    var ap = S.activePreset[name];
+    var pl = (getPresets()[name] || []);
+    if (ap === null || ap === undefined || !pl[ap]) { toast("Chọn 1 preset trước!"); return; }
+    cols = pl[ap].cols;
+  } else {
+    cols = sh.headers.filter(function(h) { return h !== "_search"; });
+  }
+
+  var rows = Array.from(sh._sel).sort(function(a,b){return a-b;})
+    .map(function(ri) { return sh.filtered[ri]; }).filter(Boolean);
+
+  var text = rows.map(function(row) {
+    return cols.map(function(c) { return fmt(row[c]); }).join("\t");
+  }).join("\n");
+
+  navigator.clipboard.writeText(text)
+    .then(function() { toast("✓ Đã copy " + rows.length + " dòng · " + cols.length + " cột"); })
+    .catch(function() { toast("Lỗi copy — cần HTTPS"); });
+}
+
+// ════════════════════════════════════════════════════════════════
+// SORT
+// ════════════════════════════════════════════════════════════════
+function sortSheet(name, colIdx) {
+  var sh = S.sheetMap[name]; if (!sh) return;
+  var cur = sh._sort || {};
+  var dir = (cur.col===colIdx && cur.dir==="asc") ? "desc" : "asc";
+  sh._sort = { col: colIdx, dir: dir };
+  applySortArr(sh);
+  sh._sel.clear();
+  renderPanel(name);
+  updateStatus(name);
+}
+function applySortArr(sh) {
+  var h = sh.headers[sh._sort.col]; var dir = sh._sort.dir;
+  sh.filtered = sh.filtered.slice().sort(function(a, b) {
+    var va=a[h], vb=b[h];
+    if (va===vb) return 0;
+    if (typeof va==="number"&&typeof vb==="number") return dir==="asc"?va-vb:vb-va;
+    var sa=removeAccents(fmt(va)), sb=removeAccents(fmt(vb));
+    return dir==="asc" ? sa.localeCompare(sb) : sb.localeCompare(sa);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// STATUS
+// ════════════════════════════════════════════════════════════════
+function updateStatus(name) {
+  var sh = S.sheetMap[name]; if (!sh) return;
+  var shown = sh.filtered.length, total = sh.rows.length;
+  document.getElementById("st-rows").textContent =
+    shown === total ? total + " dòng" : shown + "/" + total + " (lọc)";
+  var n = sh._sel.size;
+  var stSel = document.getElementById("st-sel");
+  var selCt = document.getElementById("sel-count");
+  if (n > 0) {
+    stSel.style.display  = "inline"; stSel.textContent  = "· " + n + " đã chọn";
+    selCt.style.display  = "inline"; document.getElementById("sel-n").textContent = n;
+  } else {
+    stSel.style.display  = "none";
+    selCt.style.display  = "none";
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// REFRESH
+// ════════════════════════════════════════════════════════════════
+function refreshCurrent() {
+  var name = S.current; if (!name) return;
+  var sh = S.sheetMap[name];
+  sh._loaded = false; sh.rows = []; sh.filtered = []; sh._sel.clear();
+  showPanelLoading(name);
+  loadSheetData(name);
+}
+
+// ════════════════════════════════════════════════════════════════
+// PRESET MANAGER
+// ════════════════════════════════════════════════════════════════
+function buildPresetBar(name) {
+  var bar  = document.getElementById("preset-bar");
+  var frag = '<span class="preset-lbl">Preset:</span>';
+  var list = (getPresets()[name] || []);
+  var act  = S.activePreset[name];
+  list.forEach(function(p, i) {
+    var ac = act===i ? " active" : "";
+    frag += '<div class="preset-chip' + ac + '" title="' + escA((p.cols||[]).join(", ")) + '" onclick="setPreset(' + JSON.stringify(name) + ',' + i + ')">' + esc(p.name) + '</div>';
+  });
+  frag += '<div class="preset-chip preset-add" onclick="openPM(' + JSON.stringify(name) + ')">＋ Preset</div>';
+  if (list.length > 0) frag += '<div class="preset-chip preset-add" onclick="openPM(' + JSON.stringify(name) + ',true)">⚙</div>';
+  bar.innerHTML = frag;
+}
+
+function setPreset(name, idx) {
+  S.activePreset[name] = S.activePreset[name]===idx ? null : idx;
+  buildPresetBar(name);
+}
+
+var _pmSheet = null;
+function openPM(name, manage) {
+  _pmSheet = name;
+  document.getElementById("pm-sheet").textContent = name;
+  document.getElementById("pm-idx").value = "-1";
+  document.getElementById("pm-name").value = "";
+  renderPMList(name);
+  if (!manage) initColPicker(name, -1, null);
+  openOverlay("modal-preset");
+}
+function closePM() {
+  closeOverlay("modal-preset");
+  _pmSheet = null;
+}
+
+function renderPMList(name) {
+  var list = (getPresets()[name] || []);
+  var cont = document.getElementById("pm-list");
+  if (!list.length) { cont.innerHTML = '<div style="font-size:11px;color:var(--slate-md);margin-bottom:6px">Chưa có preset</div>'; return; }
+  cont.innerHTML = list.map(function(p,i) {
+    return '<div class="pli">' +
+      '<span class="pli-name">' + esc(p.name) + '</span>' +
+      '<span class="pli-cols">' + esc((p.cols||[]).join(" · ")) + '</span>' +
+      '<div class="pli-acts">' +
+        '<button class="pli-btn pli-edit" data-i="' + i + '">Sửa</button>' +
+        '<button class="pli-btn pli-del"  data-i="' + i + '">✕</button>' +
+      '</div>' +
+    '</div>';
+  }).join("");
+  cont.querySelectorAll(".pli-edit").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var idx = parseInt(this.getAttribute("data-i"));
+      var p   = (getPresets()[name]||[])[idx];
+      document.getElementById("pm-idx").value = idx;
+      document.getElementById("pm-name").value = p.name;
+      initColPicker(name, idx, p);
+    });
+  });
+  cont.querySelectorAll(".pli-del").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var idx = parseInt(this.getAttribute("data-i"));
+      var all = getPresets();
+      if (!all[name]) return;
+      all[name].splice(idx, 1);
+      setPresets(all);
+      if (S.activePreset[name]===idx) delete S.activePreset[name];
+      renderPMList(name);
+      buildPresetBar(name);
+    });
+  });
+}
+
+/* ── COLUMN PICKER ── */
+var _dragEl = null;
+function initColPicker(name, idx, preset) {
+  var sh   = S.sheetMap[name] || {};
+  var all  = (sh.headers || []).filter(function(h) { return h !== "_search"; });
+  var sel  = preset ? (preset.cols||[]) : [];
+  var used = {};
+  sel.forEach(function(c) { used[c] = 1; });
+
+  // Pool (available)
+  var pool = document.getElementById("pm-pool");
+  pool.innerHTML = "";
+  all.forEach(function(col) {
+    if (!used[col]) pool.appendChild(makePoolTag(col));
+  });
+
+  // Selected
+  var selEl = document.getElementById("pm-sel");
+  selEl.innerHTML = "";
+  sel.forEach(function(col) { selEl.appendChild(makeSelTag(col)); });
+  if (!sel.length) selEl.innerHTML = '<div style="font-size:11px;color:#94a3b8;padding:6px;text-align:center">Chưa chọn</div>';
+
+  // Dropzone
+  selEl.ondragover = function(e) { e.preventDefault(); };
+  selEl.ondrop     = function(e) { e.preventDefault(); };
+}
+
+function makePoolTag(col) {
+  var d = document.createElement("div");
+  d.className = "col-tag col-tag-avail";
+  d.textContent = col;
+  d.onclick = function() { moveToSel(col); };
+  return d;
+}
+function makeSelTag(col) {
+  var d = document.createElement("div");
+  d.className = "col-tag col-tag-sel";
+  d.setAttribute("draggable","true");
+  d.setAttribute("data-col", col);
+  d.innerHTML = '<span class="drag-handle">⠿</span><span style="flex:1">' + esc(col) + '</span><span class="rm">✕</span>';
+  d.querySelector(".rm").onclick = function(e) { e.stopPropagation(); moveToPool(col); };
+  d.addEventListener("dragstart", function(e) {
+    _dragEl = d;
+    e.dataTransfer.effectAllowed = "move";
+    setTimeout(function() { d.style.opacity=".4"; }, 0);
+  });
+  d.addEventListener("dragend", function() { d.style.opacity="1"; _dragEl=null; });
+  d.addEventListener("dragover", function(e) { e.preventDefault(); d.style.outline="1.5px solid var(--green)"; });
+  d.addEventListener("dragleave", function() { d.style.outline=""; });
+  d.addEventListener("drop", function(e) {
+    e.preventDefault(); e.stopPropagation(); d.style.outline="";
+    if (_dragEl && _dragEl!==d) {
+      var selEl = document.getElementById("pm-sel");
+      var items = Array.from(selEl.querySelectorAll(".col-tag-sel"));
+      if (items.indexOf(_dragEl) < items.indexOf(d)) selEl.insertBefore(_dragEl, d.nextSibling);
+      else selEl.insertBefore(_dragEl, d);
+    }
+  });
+  return d;
+}
+function moveToSel(col) {
+  // Xóa khỏi pool
+  var pool = document.getElementById("pm-pool");
+  pool.querySelectorAll(".col-tag-avail").forEach(function(t) {
+    if (t.textContent===col) pool.removeChild(t);
+  });
+  // Thêm vào sel
+  var selEl = document.getElementById("pm-sel");
+  var empty = selEl.querySelector("div:not(.col-tag)");
+  if (empty) selEl.removeChild(empty);
+  selEl.appendChild(makeSelTag(col));
+}
+function moveToPool(col) {
+  var selEl = document.getElementById("pm-sel");
+  selEl.querySelectorAll(".col-tag-sel").forEach(function(t) {
+    if (t.getAttribute("data-col")===col) selEl.removeChild(t);
+  });
+  if (!selEl.querySelector(".col-tag-sel")) {
+    selEl.innerHTML = '<div style="font-size:11px;color:#94a3b8;padding:6px;text-align:center">Chưa chọn</div>';
+  }
+  document.getElementById("pm-pool").appendChild(makePoolTag(col));
+}
+
+function savePreset() {
+  var name = _pmSheet; if (!name) return;
+  var idx  = parseInt(document.getElementById("pm-idx").value);
+  var pName= document.getElementById("pm-name").value.trim();
+  if (!pName) { toast("Nhập tên preset!"); return; }
+  var cols = Array.from(document.querySelectorAll("#pm-sel .col-tag-sel"))
+    .map(function(t) { return t.getAttribute("data-col"); }).filter(Boolean);
+  if (!cols.length) { toast("Chọn ít nhất 1 cột!"); return; }
+  var all = getPresets();
+  if (!all[name]) all[name] = [];
+  if (idx>=0 && idx<all[name].length) all[name][idx]={name:pName,cols:cols};
+  else all[name].push({name:pName,cols:cols});
+  setPresets(all);
+  renderPMList(name);
+  buildPresetBar(name);
+  document.getElementById("pm-idx").value = "-1";
+  document.getElementById("pm-name").value = "";
+  initColPicker(name, -1, null);
+  toast("Đã lưu preset: " + pName);
+}
+
+// ════════════════════════════════════════════════════════════════
+// Code.gs cần thêm action changePassword trong dispatchGet
+// ════════════════════════════════════════════════════════════════
+</script>
+</body>
+</html>
