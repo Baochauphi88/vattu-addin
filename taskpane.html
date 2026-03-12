@@ -328,16 +328,42 @@ function escA(s){ return String(s||"").replace(/"/g,"&quot;"); }
 // API CALL (fetch → doPost)
 // ════════════════════════════════════════════════════════════════
 function apiCall(body, onOk, onErr) {
-  var url = getApiUrl();
-  if (!url) { if(onErr) onErr({message:"Chưa cài đặt URL API!"}); return; }
-  fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(res){ if(onOk) onOk(res); })
-  .catch(function(e){ if(onErr) onErr(e); else showToast("Lỗi: " + e.message,"error"); });
+  var baseUrl = getApiUrl();
+  if (!baseUrl) {
+    var e = { message: "Chưa cài đặt URL Web App! Nhấn ⚙ Cài đặt URL phía dưới." };
+    if (onErr) onErr(e); else showToast(e.message, "error");
+    return;
+  }
+
+  // Dùng GET thay vì POST để tránh CORS preflight
+  // Apps Script doGet có CORS headers tự động
+  var action   = body.action || "";
+  var session  = body.session || body.token || "";
+  var params   = "action=" + encodeURIComponent(action) +
+                 "&session=" + encodeURIComponent(session);
+
+  if (action === "login") {
+    params += "&email=" + encodeURIComponent(body.email || "") +
+              "&password=" + encodeURIComponent(body.password || "");
+  } else if (action === "getData") {
+    params += "&sheet=" + encodeURIComponent(body.sheet || "");
+  } else if (action === "saveRow" || action === "deleteRow") {
+    params += "&payload=" + encodeURIComponent(JSON.stringify(body));
+  }
+
+  var url = baseUrl + (baseUrl.indexOf("?") >= 0 ? "&" : "?") + params;
+
+  fetch(url, { method: "GET", redirect: "follow" })
+    .then(function(r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .then(function(res) { if (onOk) onOk(res); })
+    .catch(function(e) {
+      var msg = e.message || String(e);
+      if (onErr) onErr({ message: msg });
+      else showToast("Lỗi kết nối: " + msg, "error");
+    });
 }
 
 // ════════════════════════════════════════════════════════════════
