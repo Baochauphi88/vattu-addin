@@ -222,26 +222,48 @@ input,select,textarea{font-family:var(--font);outline:none}
 
 <!-- MODAL PRESET MANAGER -->
 <div class="overlay" id="modal-preset">
-  <div class="modal-box">
-    <h3>⚙ Quản lý Preset</h3>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">
-      Sheet hiện tại: <strong id="preset-sheet-name" style="color:var(--accent)"></strong>
-    </div>
-    <div id="preset-list-container"></div>
-    <hr style="border-color:var(--border);margin:12px 0">
-    <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--text2)">Thêm / Sửa Preset</div>
+  <div class="modal-box" style="max-width:520px">
+    <h3>⚙ Quản lý Preset — <span id="preset-sheet-name" style="color:var(--accent);font-size:13px"></span></h3>
+
+    <!-- DANH SÁCH PRESET HIỆN CÓ -->
+    <div id="preset-list-container" style="margin-bottom:12px"></div>
+
+    <hr style="border-color:var(--border);margin:10px 0">
+    <div style="font-size:12px;font-weight:700;margin-bottom:10px;color:var(--text2)" id="preset-form-title">➕ Thêm Preset mới</div>
+
     <input type="hidden" id="preset-edit-idx" value="-1">
-    <div class="fg"><label>Tên Preset</label>
-      <input id="preset-name-inp" placeholder="Báo giá, Nhập kho, ...">
+    <div class="fg" style="margin-bottom:10px">
+      <label>Tên Preset</label>
+      <input id="preset-name-inp" placeholder="Báo giá, Nhập kho, Xuất kho...">
     </div>
-    <div class="fg"><label>Cột copy (tên cột phân cách bởi Tab hoặc xuống dòng)</label>
-      <textarea id="preset-cols-inp" placeholder="MaVT&#10;TenVT&#10;NhomHang&#10;MaLabour"></textarea>
+
+    <!-- COLUMN PICKER -->
+    <div class="fg" style="margin-bottom:0">
+      <label>Chọn cột cần copy <span style="color:var(--muted);font-weight:400">(click để thêm · kéo thả để sắp xếp)</span></label>
     </div>
-    <div class="fg"><label>Thứ tự cột trong Preset</label>
-      <div style="font-size:11px;color:var(--muted)">Nhập tên cột theo thứ tự muốn copy — không cần phải theo thứ tự gốc</div>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <!-- TRÁI: Cột có sẵn -->
+      <div style="flex:1">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:5px;letter-spacing:.5px">CỘT GỐC — click để thêm</div>
+        <div id="col-available" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;
+             min-height:80px;max-height:160px;overflow-y:auto;padding:5px;display:flex;flex-wrap:wrap;gap:4px">
+        </div>
+      </div>
+      <!-- PHẢI: Cột đã chọn (draggable) -->
+      <div style="flex:1">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:5px;letter-spacing:.5px">ĐÃ CHỌN — kéo để sắp xếp</div>
+        <div id="col-selected" style="background:var(--bg);border:1px dashed var(--accent2);border-radius:6px;
+             min-height:80px;max-height:160px;overflow-y:auto;padding:5px;display:flex;flex-direction:column;gap:3px">
+          <div id="col-sel-empty" style="font-size:11px;color:var(--border2);padding:8px;text-align:center">Chưa chọn cột nào</div>
+        </div>
+      </div>
     </div>
-    <div class="mf">
-      <button class="btn btn-ghost" onclick="closeModal('modal-preset')">Hủy</button>
+    <div style="font-size:10px;color:var(--muted);margin-top:5px">
+      Thứ tự cột bên phải = thứ tự khi copy ra Excel
+    </div>
+
+    <div class="mf" style="margin-top:14px">
+      <button class="btn btn-ghost" onclick="cancelPresetEdit()">Hủy / Đóng</button>
       <button class="btn btn-accent" onclick="savePreset()">💾 Lưu Preset</button>
     </div>
   </div>
@@ -672,37 +694,38 @@ function updateSearchCount() {
 }
 
 // ════════════════════════════════════════════════════════════════
-// PRESET
+// PRESET — Column Picker với drag-and-drop
 // ════════════════════════════════════════════════════════════════
-function buildPresetBar(sheetName) {
-  var bar = document.getElementById("preset-bar");
-  bar.innerHTML = '<span id="preset-label" style="font-size:10px;color:var(--muted);white-space:nowrap">Preset:</span>';
+var _dragSrc = null; // element đang drag
 
+function buildPresetBar(sheetName) {
+  var bar  = document.getElementById("preset-bar");
+  bar.innerHTML = '<span style="font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0">Preset:</span>';
   var presets = getPresets();
   var list    = (presets[sheetName] || []);
   var active  = S.activePreset[sheetName];
 
-  list.forEach(function(p, i){
+  list.forEach(function(p, i) {
     var chip = document.createElement("div");
     chip.className = "preset-chip" + (active === i ? " active" : "");
     chip.textContent = p.name;
-    chip.onclick = function(){ setActivePreset(sheetName, i); };
+    chip.title = (p.cols||[]).join(", ");
+    chip.onclick = function() { setActivePreset(sheetName, i); };
     bar.appendChild(chip);
   });
 
-  // Nút thêm
   var add = document.createElement("div");
   add.className = "preset-chip add-chip";
-  add.textContent = "＋ Thêm";
-  add.onclick = function(){ openPresetModal(sheetName); };
+  add.textContent = "＋ Preset";
+  add.onclick = function() { openPresetModal(sheetName, -1); };
   bar.appendChild(add);
 
-  // Nút quản lý nếu có preset
   if (list.length > 0) {
     var mgr = document.createElement("div");
     mgr.className = "preset-chip add-chip";
-    mgr.textContent = "⚙ Quản lý";
-    mgr.onclick = function(){ openPresetModal(sheetName, true); };
+    mgr.textContent = "⚙";
+    mgr.title = "Quản lý preset";
+    mgr.onclick = function() { openPresetModal(sheetName, null); };
     bar.appendChild(mgr);
   }
 }
@@ -712,12 +735,15 @@ function setActivePreset(sheetName, idx) {
   buildPresetBar(sheetName);
 }
 
-function openPresetModal(sheetName, manage) {
+// editIdx: -1 = mở form thêm mới, number = sửa preset đó, null = chỉ xem danh sách
+function openPresetModal(sheetName, editIdx) {
   document.getElementById("preset-sheet-name").textContent = sheetName;
-  document.getElementById("preset-edit-idx").value = "-1";
-  document.getElementById("preset-name-inp").value = "";
-  document.getElementById("preset-cols-inp").value = "";
   renderPresetList(sheetName);
+  if (editIdx === -1) {
+    startPresetForm(sheetName, -1, null);
+  } else {
+    resetPresetForm();
+  }
   openModal("modal-preset");
 }
 
@@ -725,23 +751,176 @@ function renderPresetList(sheetName) {
   var cont    = document.getElementById("preset-list-container");
   var presets = getPresets();
   var list    = (presets[sheetName] || []);
-  if (!list.length) { cont.innerHTML = '<div style="font-size:12px;color:var(--muted)">Chưa có preset nào</div>'; return; }
-  cont.innerHTML = list.map(function(p, i){
-    return '<div class="preset-list-item">' +
+  if (!list.length) {
+    cont.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:4px 0">Chưa có preset nào</div>';
+    return;
+  }
+  cont.innerHTML = list.map(function(p, i) {
+    return '<div class="preset-list-item" id="pli-' + i + '">' +
       '<span class="pli-name">' + esc(p.name) + '</span>' +
       '<span class="pli-cols">' + esc((p.cols||[]).join(" · ")) + '</span>' +
-      '<button class="btn btn-ghost pli-btn" onclick="editPreset(' + JSON.stringify(sheetName) + ',' + i + ')">Sửa</button>' +
-      '<button class="btn btn-ghost pli-btn" style="color:var(--red)" onclick="deletePreset(' + JSON.stringify(sheetName) + ',' + i + ')">✕</button>' +
+      '<button class="btn btn-ghost pli-btn" data-action="edit" data-sheet="' + escA(sheetName) + '" data-idx="' + i + '">Sửa</button>' +
+      '<button class="btn btn-ghost pli-btn" data-action="del" data-sheet="' + escA(sheetName) + '" data-idx="' + i + '" style="color:var(--red)">✕</button>' +
     '</div>';
   }).join("");
+
+  // Gán event bằng addEventListener — tránh inline onclick HTML attr
+  cont.querySelectorAll("[data-action]").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var action = this.getAttribute("data-action");
+      var sheet  = this.getAttribute("data-sheet");
+      var idx    = parseInt(this.getAttribute("data-idx"));
+      if (action === "edit") startPresetForm(sheet, idx, (getPresets()[sheet]||[])[idx]);
+      if (action === "del")  deletePreset(sheet, idx);
+    });
+  });
 }
 
-function editPreset(sheetName, idx) {
-  var p = (getPresets()[sheetName] || [])[idx];
-  if (!p) return;
+function startPresetForm(sheetName, idx, preset) {
   document.getElementById("preset-edit-idx").value = idx;
-  document.getElementById("preset-name-inp").value = p.name;
-  document.getElementById("preset-cols-inp").value = (p.cols||[]).join("\n");
+  document.getElementById("preset-name-inp").value = preset ? preset.name : "";
+  document.getElementById("preset-form-title").textContent = idx >= 0 ? "✏ Sửa Preset" : "➕ Thêm Preset mới";
+
+  // Build column picker — nếu chưa có data thì fetch headers trước
+  var sd = S.sheetData[sheetName];
+  var selCols = preset ? (preset.cols || []) : [];
+  if (sd && sd.headers && sd.headers.length) {
+    buildColPicker(sd.headers, selCols);
+  } else {
+    document.getElementById("col-available").innerHTML =
+      '<div style="font-size:11px;color:var(--muted);padding:8px"><span class="spinner"></span> Đang tải cột...</div>';
+    apiCall({ action:"getData", sheet:sheetName, session:S.token }, function(res) {
+      if (!res.success) { showToast(res.message,"error"); return; }
+      S.sheetData[sheetName] = { headers: res.headers, rows: res.data, filtered: res.data };
+      _loaded[sheetName] = true;
+      buildColPicker(res.headers, selCols);
+    });
+  }
+}
+
+function resetPresetForm() {
+  document.getElementById("preset-edit-idx").value = "-1";
+  document.getElementById("preset-name-inp").value = "";
+  document.getElementById("preset-form-title").textContent = "➕ Thêm Preset mới";
+  document.getElementById("col-available").innerHTML = "";
+  document.getElementById("col-selected").innerHTML =
+    '<div id="col-sel-empty" style="font-size:11px;color:var(--border2);padding:8px;text-align:center">Chưa chọn cột nào</div>';
+}
+
+function cancelPresetEdit() {
+  resetPresetForm();
+  closeModal("modal-preset");
+}
+
+// ── COLUMN PICKER ──────────────────────────────────────────────
+function buildColPicker(allCols, selCols) {
+  var availEl = document.getElementById("col-available");
+  var selEl   = document.getElementById("col-selected");
+
+  // Cột chưa chọn
+  var usedSet = new Set(selCols);
+  availEl.innerHTML = "";
+  allCols.forEach(function(col) {
+    if (!usedSet.has(col)) availEl.appendChild(makeAvailChip(col));
+  });
+
+  // Cột đã chọn (theo thứ tự)
+  selEl.innerHTML = "";
+  if (selCols.length > 0) {
+    selCols.forEach(function(col) { selEl.appendChild(makeSelChip(col)); });
+  } else {
+    selEl.innerHTML = '<div id="col-sel-empty" style="font-size:11px;color:var(--border2);padding:8px;text-align:center">Chưa chọn cột nào</div>';
+  }
+
+  // Drop zone
+  selEl.addEventListener("dragover", function(e) { e.preventDefault(); });
+  selEl.addEventListener("drop", onDropToSel);
+}
+
+function makeAvailChip(col) {
+  var chip = document.createElement("div");
+  chip.className = "col-avail-chip";
+  chip.textContent = col;
+  chip.title = "Click để thêm vào preset";
+  chip.style.cssText = "padding:3px 8px;border-radius:12px;font-size:11px;cursor:pointer;" +
+    "background:var(--surface2);border:1px solid var(--border2);color:var(--text2);" +
+    "transition:all .12s;user-select:none";
+  chip.onmouseenter = function() { this.style.borderColor = "var(--accent2)"; this.style.color = "var(--accent2)"; };
+  chip.onmouseleave = function() { this.style.borderColor = "var(--border2)"; this.style.color = "var(--text2)"; };
+  chip.onclick = function() { moveToSelected(col); };
+  return chip;
+}
+
+function makeSelChip(col) {
+  var chip = document.createElement("div");
+  chip.className = "col-sel-chip";
+  chip.setAttribute("draggable", "true");
+  chip.setAttribute("data-col", col);
+  chip.style.cssText = "padding:4px 8px;border-radius:5px;font-size:11px;cursor:grab;" +
+    "background:rgba(167,139,250,.15);border:1px solid var(--accent2);color:var(--accent2);" +
+    "display:flex;align-items:center;gap:6px;user-select:none";
+  chip.innerHTML = '<span style="cursor:grab;color:var(--muted);font-size:10px">⠿</span>' +
+    '<span style="flex:1">' + esc(col) + '</span>' +
+    '<span class="col-rm" style="cursor:pointer;color:var(--muted);font-size:11px">✕</span>';
+  chip.querySelector(".col-rm").onclick = function(e) { e.stopPropagation(); moveToAvailable(col); };
+
+  // Drag events
+  chip.addEventListener("dragstart", function(e) {
+    _dragSrc = this;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", col);
+    setTimeout(function() { chip.style.opacity = "0.4"; }, 0);
+  });
+  chip.addEventListener("dragend", function() { chip.style.opacity = "1"; });
+  chip.addEventListener("dragover", function(e) {
+    e.preventDefault(); e.dataTransfer.dropEffect = "move";
+    this.style.borderColor = "var(--green)";
+  });
+  chip.addEventListener("dragleave", function() { this.style.borderColor = "var(--accent2)"; });
+  chip.addEventListener("drop", function(e) {
+    e.preventDefault(); e.stopPropagation();
+    this.style.borderColor = "var(--accent2)";
+    if (_dragSrc && _dragSrc !== this) {
+      var selEl  = document.getElementById("col-selected");
+      var chips  = Array.from(selEl.querySelectorAll(".col-sel-chip"));
+      var srcIdx = chips.indexOf(_dragSrc);
+      var tgtIdx = chips.indexOf(this);
+      if (srcIdx < tgtIdx) selEl.insertBefore(_dragSrc, this.nextSibling);
+      else selEl.insertBefore(_dragSrc, this);
+    }
+  });
+  return chip;
+}
+
+function onDropToSel(e) {
+  e.preventDefault();
+  // Xử lý drop vào vùng trống của col-selected
+  var col = e.dataTransfer.getData("text/plain");
+  if (!col) return;
+}
+
+function moveToSelected(col) {
+  // Xóa khỏi available
+  var availEl = document.getElementById("col-available");
+  var chips   = availEl.querySelectorAll(".col-avail-chip");
+  chips.forEach(function(c) { if (c.textContent === col) availEl.removeChild(c); });
+  // Thêm vào selected
+  var selEl = document.getElementById("col-selected");
+  var empty = document.getElementById("col-sel-empty");
+  if (empty) selEl.removeChild(empty);
+  selEl.appendChild(makeSelChip(col));
+}
+
+function moveToAvailable(col) {
+  // Xóa khỏi selected
+  var selEl = document.getElementById("col-selected");
+  var chips = selEl.querySelectorAll(".col-sel-chip");
+  chips.forEach(function(c) { if (c.getAttribute("data-col") === col) selEl.removeChild(c); });
+  if (!selEl.querySelector(".col-sel-chip")) {
+    selEl.innerHTML = '<div id="col-sel-empty" style="font-size:11px;color:var(--border2);padding:8px;text-align:center">Chưa chọn cột nào</div>';
+  }
+  // Thêm lại vào available
+  document.getElementById("col-available").appendChild(makeAvailChip(col));
 }
 
 function deletePreset(sheetName, idx) {
@@ -750,28 +929,33 @@ function deletePreset(sheetName, idx) {
   p[sheetName].splice(idx, 1);
   savePresets(p);
   if (S.activePreset[sheetName] === idx) delete S.activePreset[sheetName];
+  else if (S.activePreset[sheetName] > idx) S.activePreset[sheetName]--;
   renderPresetList(sheetName);
   buildPresetBar(sheetName);
 }
 
 function savePreset() {
-  var sheetName = document.getElementById("preset-sheet-name").textContent;
+  var sheetName = document.getElementById("preset-sheet-name").textContent.trim();
   var idx       = parseInt(document.getElementById("preset-edit-idx").value);
   var name      = document.getElementById("preset-name-inp").value.trim();
-  var colsRaw   = document.getElementById("preset-cols-inp").value.trim();
-  if (!name || !colsRaw) { showToast("Nhập tên và danh sách cột!","error"); return; }
-  var cols = colsRaw.split(/[\n\t]+/).map(function(c){ return c.trim(); }).filter(Boolean);
+  if (!name) { showToast("Nhập tên Preset!", "error"); return; }
+
+  // Lấy cột từ col-selected theo thứ tự hiện tại
+  var selEl = document.getElementById("col-selected");
+  var cols  = Array.from(selEl.querySelectorAll(".col-sel-chip"))
+    .map(function(c) { return c.getAttribute("data-col"); })
+    .filter(Boolean);
+  if (!cols.length) { showToast("Chọn ít nhất 1 cột!", "error"); return; }
+
   var p = getPresets();
   if (!p[sheetName]) p[sheetName] = [];
-  if (idx >= 0 && idx < p[sheetName].length) p[sheetName][idx] = { name:name, cols:cols };
-  else p[sheetName].push({ name:name, cols:cols });
+  if (idx >= 0 && idx < p[sheetName].length) p[sheetName][idx] = { name: name, cols: cols };
+  else p[sheetName].push({ name: name, cols: cols });
   savePresets(p);
   renderPresetList(sheetName);
   buildPresetBar(sheetName);
-  document.getElementById("preset-edit-idx").value = "-1";
-  document.getElementById("preset-name-inp").value = "";
-  document.getElementById("preset-cols-inp").value = "";
-  showToast("Đã lưu Preset!","success");
+  resetPresetForm();
+  showToast("Đã lưu Preset: " + name, "success");
 }
 
 // ════════════════════════════════════════════════════════════════
