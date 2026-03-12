@@ -321,7 +321,7 @@ body{font-family:Arial,sans-serif;font-size:13px;background:#F1F5F9;color:var(--
     <!-- TÌM KIẾM -->
     <div class="tab-panel active" id="tab-search">
       <div class="search-row">
-        <input id="search-input" placeholder="Mã, tên, brand, quy cách..." autocomplete="off">
+        <input id="search-input" placeholder="Tìm: ppr*vesbo*ong (dùng * ngăn cách từ khóa)" autocomplete="off">
         <select id="filter-nhom"><option value="">Tất cả nhóm</option></select>
         <select id="filter-brand"><option value="">Tất cả brand</option></select>
       </div>
@@ -336,7 +336,7 @@ body{font-family:Arial,sans-serif;font-size:13px;background:#F1F5F9;color:var(--
     <!-- TỒN KHO -->
     <div class="tab-panel" id="tab-tonkho">
       <div class="search-row">
-        <input id="tk-search" placeholder="Tìm mã, tên, kho...">
+        <input id="tk-search" placeholder="Tìm: mã*tên*kho (dùng * ngăn cách)">
         <select id="tk-filter-store"><option value="">Tất cả kho</option></select>
       </div>
       <div id="tk-list"><div class="loading"><div class="loading-spinner"></div><br>Đang tải...</div></div>
@@ -439,6 +439,31 @@ const ST = {
   },
   saveCols(c){ localStorage.setItem("vattu_cols", JSON.stringify(c)); },
 };
+
+// ── UTILS TÌM KIẾM KHÔNG DẤU + * ──────────────────────────
+function removeAccents(str) {
+  if (!str) return "";
+  const s = String(str);
+  const from = "àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ";
+  const to   = "aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyydAAAAAAAAAAAAAAAAAEEEEEEEEEEEIIIIIOOOOOOOOOOOOOOOOOUUUUUUUUUUUYYYYYD";
+  let result = "";
+  for (let i = 0; i < s.length; i++) {
+    const idx = from.indexOf(s[i]);
+    result += idx >= 0 ? to[idx] : s[i];
+  }
+  return result;
+}
+
+function matchKeywords(obj, rawKeyword) {
+  if (!rawKeyword || !rawKeyword.trim()) return true;
+  const haystack = removeAccents(
+    Object.values(obj).map(v => String(v === null || v === undefined ? "" : v)).join(" ")
+  ).toLowerCase();
+  const keywords = rawKeyword.split("*")
+    .map(k => removeAccents(k.trim()).toLowerCase())
+    .filter(Boolean);
+  return keywords.every(k => haystack.includes(k));
+}
 
 const ALL_COLS = [
   {key:"MaVT",           label:"Mã VT"},
@@ -580,16 +605,13 @@ async function loadNhom() {
 // SEARCH TAB
 // ════════════════════════════════════════════════════════
 function getFilteredVatTu() {
-  const kw    = document.getElementById("search-input").value.toLowerCase().trim();
+  const kw    = document.getElementById("search-input").value.trim();
   const nhom  = document.getElementById("filter-nhom").value;
   const brand = document.getElementById("filter-brand").value;
   return ST.banggia.filter(v => {
     if (nhom  && v.NhomHang !== nhom)  return false;
     if (brand && v.MaBrand  !== brand) return false;
-    if (kw) {
-      const hay = [v.MaVT,v.TenVT,v.QuyCach,v.MaBrand,v.NhomHang].join(" ").toLowerCase();
-      if (!hay.includes(kw)) return false;
-    }
+    if (kw && !matchKeywords(v, kw))   return false;
     return true;
   });
 }
@@ -864,10 +886,7 @@ function renderTonKhoTab() {
   const store = document.getElementById("tk-filter-store").value;
   const list  = ST.tonkho.filter(t => {
     if (store && t.Store !== store) return false;
-    if (kw) {
-      const hay = [t.MaVT,t.TenVT,t.Store].join(" ").toLowerCase();
-      if (!hay.includes(kw)) return false;
-    }
+    if (kw && !matchKeywords(t, kw)) return false;
     return true;
   });
   const el = document.getElementById("tk-list");
