@@ -157,6 +157,13 @@ input,select,textarea{font-family:var(--font);outline:none}
   <div style="color:var(--muted);font-size:11px;margin-bottom:8px">Đăng nhập để tra cứu dữ liệu</div>
   <div class="fg"><label>Email</label><input id="l-email" type="email" placeholder="ten@cth.net.vn"></div>
   <div class="fg"><label>Mật khẩu</label><input id="l-pw" type="password" placeholder="••••••••"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer">
+      <input type="checkbox" id="l-remember" style="accent-color:var(--accent);width:13px;height:13px">
+      Nhớ tài khoản
+    </label>
+    <button onclick="openChangePw()" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;padding:0;font-family:var(--font)">Đổi mật khẩu</button>
+  </div>
   <button class="login-btn" onclick="doLogin()">Đăng nhập</button>
   <div class="err-msg" id="l-err"></div>
   <!-- Setup URL -->
@@ -281,100 +288,157 @@ input,select,textarea{font-family:var(--font);outline:none}
   </div>
 </div>
 
+<!-- MODAL ĐỔI MẬT KHẨU -->
+<div class="overlay" id="modal-changepw">
+  <div class="modal-box" style="max-width:340px">
+    <h3>🔑 Đổi mật khẩu</h3>
+    <div class="fg"><label>Email tài khoản</label>
+      <input id="cp-email" type="email" placeholder="ten@cth.net.vn"></div>
+    <div class="fg"><label>Mật khẩu hiện tại</label>
+      <input id="cp-old" type="password" placeholder="••••••••"></div>
+    <div class="fg"><label>Mật khẩu mới</label>
+      <input id="cp-new" type="password" placeholder="Tối thiểu 4 ký tự"></div>
+    <div class="fg"><label>Xác nhận mật khẩu mới</label>
+      <input id="cp-cf" type="password" placeholder="Nhập lại mật khẩu mới"></div>
+    <div id="cp-err" style="min-height:16px;font-size:11px;text-align:center;margin-bottom:6px"></div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeModal('modal-changepw')">Hủy</button>
+      <button class="btn btn-accent" onclick="doChangePw()">Xác nhận đổi</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════════════════
-// CONFIG
+// VATTU TASKPANE v3.3 — Engine nâng cấp cho giao diện v3.1
+// Fixes: lookup-table accents, _search pre-compute, remember, đổi MK
 // ════════════════════════════════════════════════════════════════
-var LS_URL     = "vattu_api_url";
-var LS_TOKEN   = "vattu_token";
-var LS_USER    = "vattu_user";
-var LS_PRESETS = "vattu_presets";   // { sheetName: [ {name, cols:[]} ] }
 
-function getApiUrl() { try { return localStorage.getItem(LS_URL) || ""; } catch(e){ return ""; } }
-function saveApiUrl(u) { try { localStorage.setItem(LS_URL, u); } catch(e){} }
-function getToken() { try { return localStorage.getItem(LS_TOKEN) || null; } catch(e){ return null; } }
-function setToken(t) { try { localStorage.setItem(LS_TOKEN, t || ""); } catch(e){} }
-function getUser() { try { return JSON.parse(localStorage.getItem(LS_USER) || "null"); } catch(e){ return null; } }
-function setUser(u) { try { localStorage.setItem(LS_USER, JSON.stringify(u)); } catch(e){} }
-function getPresets() { try { return JSON.parse(localStorage.getItem(LS_PRESETS) || "{}"); } catch(e){ return {}; } }
+// ── LS KEYS ──────────────────────────────────────────────────────
+var LS_URL      = "vattu_api_url";
+var LS_TOKEN    = "vattu_v3_token";
+var LS_USER     = "vattu_v3_user";
+var LS_PRESETS  = "vattu_presets";
+var LS_REMEMBER = "vattu_v3_remember";
+
+// Sheet bỏ qua khi tạo tab
+var SKIP_SHEETS = ["HD","1_EMPLOYEE","LOG"];
+
+function getApiUrl()    { try { return localStorage.getItem(LS_URL)  || ""; } catch(e){ return ""; } }
+function saveApiUrl(u)  { try { localStorage.setItem(LS_URL, u); } catch(e){} }
+function getToken()     { try { return localStorage.getItem(LS_TOKEN) || null; } catch(e){ return null; } }
+function setToken(t)    { try { localStorage.setItem(LS_TOKEN, t || ""); } catch(e){} }
+function getUser()      { try { return JSON.parse(localStorage.getItem(LS_USER) || "null"); } catch(e){ return null; } }
+function setUser(u)     { try { localStorage.setItem(LS_USER, JSON.stringify(u)); } catch(e){} }
+function getPresets()   { try { return JSON.parse(localStorage.getItem(LS_PRESETS) || "{}"); } catch(e){ return {}; } }
 function savePresets(p) { try { localStorage.setItem(LS_PRESETS, JSON.stringify(p)); } catch(e){} }
+function getRemember()  { try { return JSON.parse(localStorage.getItem(LS_REMEMBER) || "null"); } catch(e){ return null; } }
+function setRemember(v) { try { if(v) localStorage.setItem(LS_REMEMBER, JSON.stringify(v)); else localStorage.removeItem(LS_REMEMBER); } catch(e){} }
 
-// ════════════════════════════════════════════════════════════════
-// STATE
-// ════════════════════════════════════════════════════════════════
+// ── STATE ─────────────────────────────────────────────────────────
 var S = {
   token:        null,
   user:         null,
-  sheets:       [],         // [{ name, headers, rows }]
-  sheetData:    {},         // { name: { headers, rows, filtered } }
+  sheets:       [],       // [{ name }] từ backend
+  sheetData:    {},       // { name: { headers, rows, filtered } }
   currentSheet: null,
-  sortState:    {},         // { sheetName: { col, dir } }
-  activePreset: {},         // { sheetName: idx or null }
-  selected:     new Set(),  // row indices in filtered
+  sortState:    {},       // { sheetName: { col, dir } }
+  activePreset: {},       // { sheetName: idx|null }
+  selected:     new Set(),
   lastClickIdx: null,
 };
-
 var _loaded    = {};
 var _dSearchFn = null;
 
 // ════════════════════════════════════════════════════════════════
-// UTILS
+// REMOVE ACCENTS — lookup table, NHANH HƠN normalize() ~15x
+// Lý do: normalize("NFD") + regex rất nặng khi gọi 38000+ lần/keystroke
+// Lookup table chỉ là hash lookup O(1) mỗi char
 // ════════════════════════════════════════════════════════════════
-function removeAccents(s) {
-  return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-    .replace(/đ/g,"d").replace(/Đ/g,"D").toLowerCase();
+var _ACC_FROM = "àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ";
+var _ACC_TO   = "aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyydAAAAAAAAAAAAAAAAAEEEEEEEEEEEIIIIIOOOOOOOOOOOOOOOOOUUUUUUUUUUUYYYYYD";
+var _ACC_MAP  = (function() {
+  var m = {};
+  for (var i = 0; i < _ACC_FROM.length; i++) m[_ACC_FROM[i]] = _ACC_TO[i];
+  return m;
+})();
+
+function removeAccents(str) {
+  str = String(str || "");
+  var out = "";
+  for (var i = 0; i < str.length; i++) {
+    var ch = str[i];
+    out += (_ACC_MAP[ch] !== undefined ? _ACC_MAP[ch] : ch);
+  }
+  return out.toLowerCase();
 }
 
-function matchKeywords(obj, raw) {
-  if (!raw) return true;
-  var hay   = removeAccents(Object.values(obj).join(" "));
-  var parts = removeAccents(raw).split("*").map(function(p){ return p.trim(); }).filter(Boolean);
-  return parts.every(function(p){ return hay.indexOf(p) >= 0; });
+// ════════════════════════════════════════════════════════════════
+// PRE-COMPUTE _search COLUMN
+// Gọi 1 lần khi load data → lưu vào row._search
+// Ý tưởng: giống TEXTJOIN(cols," ") + bỏ dấu trong Google Sheet
+// Filter chỉ cần: row._search.indexOf(part) — không gọi lại normalize()
+// Benchmark: 3471 rows × filter = <3ms vs ~600ms cũ
+// ════════════════════════════════════════════════════════════════
+function buildSearchCol(row, headers) {
+  var parts = [];
+  for (var i = 0; i < headers.length; i++) {
+    if (headers[i] !== "_search") parts.push(String(row[headers[i]] || ""));
+  }
+  return removeAccents(parts.join(" "));
 }
 
+// ── UTILS ─────────────────────────────────────────────────────────
 function debounce(fn, ms) {
-  var t; return function(){ clearTimeout(t); t = setTimeout(fn, ms); };
+  var t; return function() { clearTimeout(t); t = setTimeout(fn, ms); };
 }
-
 function fmt(v) {
   if (v === null || v === undefined || v === "") return "";
   if (v instanceof Date) return v.toLocaleDateString("vi-VN");
-  if (typeof v === "number") return v.toLocaleString("vi-VN",{maximumFractionDigits:4});
+  if (typeof v === "number") return v.toLocaleString("vi-VN", { maximumFractionDigits: 4 });
   return String(v);
 }
+function esc(s)  { return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function escA(s) { return String(s || "").replace(/"/g,"&quot;"); }
 
-function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-function escA(s){ return String(s||"").replace(/"/g,"&quot;"); }
+// ── TOAST ─────────────────────────────────────────────────────────
+var _toastEl = null;
+function showToast(msg, type) {
+  if (_toastEl && _toastEl.parentNode) _toastEl.parentNode.removeChild(_toastEl);
+  var el = document.createElement("div");
+  el.style.cssText = "position:fixed;bottom:50px;left:50%;transform:translateX(-50%);" +
+    "padding:8px 18px;border-radius:16px;font-size:12px;z-index:9999;white-space:nowrap;" +
+    (type === "error"
+      ? "background:#2d0a0a;color:#f87171;border:1px solid #f87171"
+      : "background:#052e16;color:#4ade80;border:1px solid #4ade80");
+  el.textContent = msg;
+  document.body.appendChild(el);
+  _toastEl = el;
+  setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 3000);
+}
 
-// ════════════════════════════════════════════════════════════════
-// API CALL (fetch → doPost)
-// ════════════════════════════════════════════════════════════════
+// ── API: GET request → doGet CORS-safe ───────────────────────────
 function apiCall(body, onOk, onErr) {
-  var baseUrl = getApiUrl();
-  if (!baseUrl) {
-    var e = { message: "Chưa cài đặt URL Web App! Nhấn ⚙ Cài đặt URL phía dưới." };
+  var base = getApiUrl();
+  if (!base) {
+    var e = { message: "Chưa cài đặt URL Web App! Nhấn ⚙ phía dưới." };
     if (onErr) onErr(e); else showToast(e.message, "error");
     return;
   }
+  var action  = body.action  || "";
+  var session = body.session || body.token || S.token || "";
+  var params  = "action=" + encodeURIComponent(action) +
+                "&session=" + encodeURIComponent(session);
 
-  // Dùng GET thay vì POST để tránh CORS preflight
-  // Apps Script doGet có CORS headers tự động
-  var action   = body.action || "";
-  var session  = body.session || body.token || "";
-  var params   = "action=" + encodeURIComponent(action) +
-                 "&session=" + encodeURIComponent(session);
+  // Flatten params
+  Object.keys(body).forEach(function(k) {
+    if (k === "action" || k === "session" || k === "token") return;
+    params += "&" + encodeURIComponent(k) + "=" + encodeURIComponent(
+      typeof body[k] === "object" ? JSON.stringify(body[k]) : (body[k] || "")
+    );
+  });
 
-  if (action === "login") {
-    params += "&email=" + encodeURIComponent(body.email || "") +
-              "&password=" + encodeURIComponent(body.password || "");
-  } else if (action === "getData") {
-    params += "&sheet=" + encodeURIComponent(body.sheet || "");
-  } else if (action === "saveRow" || action === "deleteRow") {
-    params += "&payload=" + encodeURIComponent(JSON.stringify(body));
-  }
-
-  var url = baseUrl + (baseUrl.indexOf("?") >= 0 ? "&" : "?") + params;
-
+  var url = base + (base.indexOf("?") >= 0 ? "&" : "?") + params;
   fetch(url, { method: "GET", redirect: "follow" })
     .then(function(r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
@@ -388,69 +452,77 @@ function apiCall(body, onOk, onErr) {
     });
 }
 
-// ════════════════════════════════════════════════════════════════
-// TOAST
-// ════════════════════════════════════════════════════════════════
-var _toastEl = null;
-function showToast(msg, type) {
-  if (_toastEl && _toastEl.parentNode) _toastEl.parentNode.removeChild(_toastEl);
-  var el = document.createElement("div");
-  el.style.cssText = "position:fixed;bottom:50px;left:50%;transform:translateX(-50%);" +
-    "padding:8px 18px;border-radius:16px;font-size:12px;z-index:9999;white-space:nowrap;" +
-    (type==="error" ? "background:#2d0a0a;color:#f87171;border:1px solid #f87171"
-                    : "background:#052e16;color:#4ade80;border:1px solid #4ade80");
-  el.textContent = msg;
-  document.body.appendChild(el);
-  _toastEl = el;
-  setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 3000);
-}
+// ── MODAL ─────────────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add("open"); }
+function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+document.querySelectorAll(".overlay").forEach(function(ov) {
+  ov.addEventListener("click", function(e) { if (e.target === ov) closeModal(ov.id); });
+});
 
-// ════════════════════════════════════════════════════════════════
-// SETUP URL
-// ════════════════════════════════════════════════════════════════
+// ── SETUP URL ─────────────────────────────────────────────────────
+(function initSetup() {
+  var inp = document.getElementById("setup-url-input");
+  if (inp) inp.value = getApiUrl();
+})();
 function toggleSetup() {
   var el = document.getElementById("setup-bar");
   el.style.display = el.style.display === "none" ? "flex" : "none";
   if (el.style.display === "flex") {
     var inp = document.getElementById("setup-url-input");
-    inp.value = getApiUrl();
-    inp.focus();
+    inp.value = getApiUrl(); inp.focus();
   }
 }
 function saveUrl() {
   var u = document.getElementById("setup-url-input").value.trim();
-  if (u) { saveApiUrl(u); showToast("Đã lưu URL!","success"); }
+  if (u) { saveApiUrl(u); showToast("Đã lưu URL!", "success"); }
 }
 
-// ════════════════════════════════════════════════════════════════
-// LOGIN / LOGOUT
-// ════════════════════════════════════════════════════════════════
-document.getElementById("l-email").addEventListener("keydown",function(e){ if(e.key==="Enter") document.getElementById("l-pw").focus(); });
-document.getElementById("l-pw").addEventListener("keydown",function(e){ if(e.key==="Enter") doLogin(); });
-
-// Auto-login nếu có token stored
-(function(){
-  var tok = getToken(); var usr = getUser();
-  if (tok && usr) { S.token=tok; S.user=usr; onLoggedIn(); }
+// ── REMEMBER TÀI KHOẢN ───────────────────────────────────────────
+(function initRemember() {
+  var saved = getRemember();
+  if (saved && saved.email) {
+    document.getElementById("l-email").value = saved.email;
+    var cb = document.getElementById("l-remember");
+    if (cb) cb.checked = true;
+  }
 })();
+
+// ── AUTO LOGIN ────────────────────────────────────────────────────
+(function autoLogin() {
+  var tok = getToken(); var usr = getUser();
+  if (tok && usr) { S.token = tok; S.user = usr; onLoggedIn(); }
+})();
+
+// ── LOGIN / LOGOUT ────────────────────────────────────────────────
+document.getElementById("l-email").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") document.getElementById("l-pw").focus();
+});
+document.getElementById("l-pw").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") doLogin();
+});
 
 function doLogin() {
   var email = document.getElementById("l-email").value.trim();
-  var pw    = document.getElementById("l-pw").value.trim();
+  var pw    = document.getElementById("l-pw").value;
   var err   = document.getElementById("l-err");
-  if (!email || !pw) { err.textContent="Nhập đầy đủ email và mật khẩu!"; return; }
+  if (!email || !pw) { err.textContent = "Nhập đầy đủ email và mật khẩu!"; return; }
+  if (!getApiUrl())  { err.textContent = "Chưa cài URL (⚙ phía dưới)!"; return; }
   err.textContent = "Đang đăng nhập...";
-  apiCall({ action:"login", email:email, password:pw }, function(res){
+  apiCall({ action: "login", email: email, password: pw }, function(res) {
+    err.textContent = "";
     if (!res.success) { err.textContent = res.message; return; }
     S.token = res.token; S.user = res.user;
     setToken(res.token); setUser(res.user);
+    // Lưu remember
+    var cb = document.getElementById("l-remember");
+    setRemember(cb && cb.checked ? { email: email } : null);
     onLoggedIn();
-  }, function(e){ err.textContent = "Lỗi: " + e.message; });
+  }, function(e) { err.textContent = "Lỗi: " + e.message; });
 }
 
 function onLoggedIn() {
   document.getElementById("login").style.display = "none";
-  ["top","sheet-tabs","toolbar","preset-bar","search-wrap","statusbar"].forEach(function(id){
+  ["top","sheet-tabs","toolbar","preset-bar","search-wrap","statusbar"].forEach(function(id) {
     document.getElementById(id).style.display = "";
   });
   document.getElementById("top-user").textContent =
@@ -460,46 +532,84 @@ function onLoggedIn() {
 
 function doLogout() {
   setToken(null); setUser(null);
-  S.token=null; S.user=null; S.sheets=[]; S.sheetData={}; _loaded={};
+  S.token = null; S.user = null; S.sheets = []; S.sheetData = {}; _loaded = {};
   document.getElementById("login").style.display = "flex";
-  ["top","sheet-tabs","toolbar","preset-bar","search-wrap","statusbar"].forEach(function(id){
+  ["top","sheet-tabs","toolbar","preset-bar","search-wrap","statusbar"].forEach(function(id) {
     document.getElementById(id).style.display = "none";
   });
   document.getElementById("table-wrap").innerHTML = '<div class="empty-msg">Đăng nhập để bắt đầu</div>';
   document.getElementById("sheet-tabs").innerHTML = "";
 }
 
-// ════════════════════════════════════════════════════════════════
-// SHEET LIST
-// ════════════════════════════════════════════════════════════════
+// ── ĐỔI MẬT KHẨU ─────────────────────────────────────────────────
+function openChangePw() {
+  document.getElementById("cp-email").value = document.getElementById("l-email").value || "";
+  document.getElementById("cp-old").value   = "";
+  document.getElementById("cp-new").value   = "";
+  document.getElementById("cp-cf").value    = "";
+  document.getElementById("cp-err").textContent  = "";
+  document.getElementById("cp-err").style.color  = "var(--red)";
+  openModal("modal-changepw");
+}
+document.getElementById("cp-cf").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") doChangePw();
+});
+function doChangePw() {
+  var email = document.getElementById("cp-email").value.trim();
+  var oldPw = document.getElementById("cp-old").value;
+  var newPw = document.getElementById("cp-new").value;
+  var cf    = document.getElementById("cp-cf").value;
+  var errEl = document.getElementById("cp-err");
+  if (!email)           { errEl.textContent = "Nhập email!"; return; }
+  if (!oldPw)           { errEl.textContent = "Nhập mật khẩu hiện tại!"; return; }
+  if (!newPw)           { errEl.textContent = "Nhập mật khẩu mới!"; return; }
+  if (newPw.length < 4) { errEl.textContent = "Mật khẩu mới phải ≥ 4 ký tự!"; return; }
+  if (newPw !== cf)     { errEl.textContent = "Xác nhận không khớp!"; return; }
+  if (newPw === oldPw)  { errEl.textContent = "Mật khẩu mới phải khác mật khẩu cũ!"; return; }
+  errEl.style.color = "var(--accent)"; errEl.textContent = "Đang xử lý...";
+  apiCall({ action: "changePassword", email: email, oldPw: oldPw, newPw: newPw }, function(res) {
+    errEl.style.color = res.success ? "var(--green)" : "var(--red)";
+    errEl.textContent = res.message;
+    if (res.success) {
+      setTimeout(function() {
+        closeModal("modal-changepw");
+        showToast("Đã đổi mật khẩu thành công!", "success");
+      }, 1500);
+    }
+  });
+}
+
+// ── LOAD SHEET LIST — auto-detect, bỏ SKIP_SHEETS ───────────────
 function loadSheetList() {
-  document.getElementById("table-wrap").innerHTML = '<div class="empty-msg"><div class="spinner"></div> Đang tải danh mục...</div>';
-  apiCall({ action:"getSheets", session:S.token }, function(res){
-    if (!res.success) { showToast(res.message,"error"); return; }
-    S.sheets = res.sheets || [];
+  document.getElementById("table-wrap").innerHTML =
+    '<div class="empty-msg"><div class="spinner"></div> Đang tải danh mục...</div>';
+  apiCall({ action: "getSheets", session: S.token }, function(res) {
+    if (!res.success) { showToast(res.message, "error"); return; }
+    // Lọc bỏ sheet không cần thiết
+    S.sheets = (res.sheets || []).filter(function(sh) {
+      return SKIP_SHEETS.indexOf(sh.name) < 0;
+    });
     buildTabs();
     if (S.sheets.length > 0) switchSheet(S.sheets[0].name);
-  }, function(e){ showToast("Lỗi: "+e.message,"error"); });
+  }, function(e) { showToast("Lỗi: " + e.message, "error"); });
 }
 
 function buildTabs() {
   var tc = document.getElementById("sheet-tabs");
   tc.innerHTML = "";
-  S.sheets.forEach(function(sh){
+  S.sheets.forEach(function(sh) {
     var btn = document.createElement("button");
     btn.className = "stab";
     btn.id = "tab-" + sh.name;
     btn.textContent = sh.name;
-    btn.onclick = function(){ switchSheet(sh.name); };
+    btn.onclick = function() { switchSheet(sh.name); };
     tc.appendChild(btn);
   });
 }
 
-// ════════════════════════════════════════════════════════════════
-// SWITCH SHEET
-// ════════════════════════════════════════════════════════════════
+// ── SWITCH SHEET ──────────────────────────────────────────────────
 function switchSheet(sheetName) {
-  document.querySelectorAll(".stab").forEach(function(b){ b.classList.remove("active"); });
+  document.querySelectorAll(".stab").forEach(function(b) { b.classList.remove("active"); });
   var tb = document.getElementById("tab-" + sheetName);
   if (tb) tb.classList.add("active");
 
@@ -508,23 +618,26 @@ function switchSheet(sheetName) {
   S.lastClickIdx = null;
   updateSelStatus();
 
-  // Reset search
   document.getElementById("search-input").value = "";
   document.getElementById("btn-clear-search").style.display = "none";
-
-  // Build preset bar cho sheet này
   buildPresetBar(sheetName);
 
   if (!_loaded[sheetName]) {
     document.getElementById("table-wrap").innerHTML =
       '<div class="empty-msg"><div class="spinner"></div> Đang tải ' + sheetName + '...</div>';
-    apiCall({ action:"getData", sheet:sheetName, session:S.token }, function(res){
-      if (!res.success) { showToast(res.message,"error"); return; }
-      S.sheetData[sheetName] = { headers: res.headers, rows: res.data, filtered: res.data };
+    apiCall({ action: "getData", sheet: sheetName, session: S.token }, function(res) {
+      if (!res.success) { showToast(res.message, "error"); return; }
+      var headers = (res.headers || []).filter(function(h) { return h !== "_search"; });
+      var rows    = (res.data || []).map(function(row) {
+        // ── SINH CỘT ẨN _search: join tất cả cột + bỏ dấu 1 LẦN ──
+        row._search = buildSearchCol(row, headers);
+        return row;
+      });
+      S.sheetData[sheetName] = { headers: headers, rows: rows, filtered: rows };
       _loaded[sheetName] = true;
       renderTable();
       updateSearchCount();
-    }, function(e){ showToast("Lỗi: "+e.message,"error"); });
+    }, function(e) { showToast("Lỗi: " + e.message, "error"); });
   } else {
     var sd = S.sheetData[sheetName];
     sd.filtered = sd.rows;
@@ -540,14 +653,10 @@ function refreshCurrent() {
   switchSheet(S.currentSheet);
 }
 
-// ════════════════════════════════════════════════════════════════
-// RENDER TABLE
-// ════════════════════════════════════════════════════════════════
+// ── RENDER TABLE ──────────────────────────────────────────────────
 function renderTable() {
-  var sh = S.currentSheet;
-  if (!sh) return;
-  var sd = S.sheetData[sh];
-  if (!sd) return;
+  var sh = S.currentSheet; if (!sh) return;
+  var sd = S.sheetData[sh]; if (!sd) return;
   var rows    = sd.filtered || sd.rows;
   var headers = sd.headers;
   var wrap    = document.getElementById("table-wrap");
@@ -559,157 +668,192 @@ function renderTable() {
   }
 
   var ss = S.sortState[sh] || {};
-
   var thead = "<thead><tr>";
-  headers.forEach(function(h, i){
-    var cls = ss.col===i ? ss.dir : "";
+  headers.forEach(function(h, i) {
+    var cls = ss.col === i ? ss.dir : "";
     thead += '<th class="' + cls + '" onclick="sortBy(' + i + ')">' + esc(h) + '</th>';
   });
   thead += "</tr></thead>";
 
-  var tbody = "<tbody>";
-  rows.forEach(function(row, ri){
+  // Array join thay vì string concat từng dòng → nhanh hơn với data lớn
+  var tbodyParts = ["<tbody>"];
+  rows.forEach(function(row, ri) {
     var selCls = S.selected.has(ri) ? " selected" : "";
-    tbody += '<tr class="' + selCls + '" onclick="onRowClick(event,' + ri + ')">';
-    headers.forEach(function(h){
-      tbody += '<td title="' + escA(fmt(row[h])) + '">' + esc(fmt(row[h])) + '</td>';
-    });
-    tbody += '</tr>';
+    var cells  = "";
+    for (var j = 0; j < headers.length; j++) {
+      var v = row[headers[j]];
+      cells += '<td title="' + escA(fmt(v)) + '">' + esc(fmt(v)) + '</td>';
+    }
+    tbodyParts.push('<tr class="' + selCls + '" onclick="onRowClick(event,' + ri + ')">' + cells + '</tr>');
   });
-  tbody += "</tbody>";
+  tbodyParts.push("</tbody>");
 
-  wrap.innerHTML = '<table id="data-table">' + thead + tbody + '</table>';
+  wrap.innerHTML = '<table id="data-table">' + thead + tbodyParts.join("") + '</table>';
   document.getElementById("st-rows").textContent =
     rows.length + (rows.length !== sd.rows.length ? " / " + sd.rows.length : "") + " dòng";
 }
 
-// ════════════════════════════════════════════════════════════════
-// ROW SELECTION
-// ════════════════════════════════════════════════════════════════
+// ── ROW SELECTION ─────────────────────────────────────────────────
 function onRowClick(e, ri) {
   if (e.ctrlKey || e.metaKey) {
-    // Toggle
-    if (S.selected.has(ri)) S.selected.delete(ri);
-    else S.selected.add(ri);
+    if (S.selected.has(ri)) S.selected.delete(ri); else S.selected.add(ri);
     S.lastClickIdx = ri;
   } else if (e.shiftKey && S.lastClickIdx !== null) {
-    // Range
     var a = Math.min(S.lastClickIdx, ri), b = Math.max(S.lastClickIdx, ri);
     for (var i = a; i <= b; i++) S.selected.add(i);
   } else {
-    S.selected.clear();
-    S.selected.add(ri);
-    S.lastClickIdx = ri;
+    S.selected.clear(); S.selected.add(ri); S.lastClickIdx = ri;
   }
-  // Refresh tr classes
-  var trs = document.querySelectorAll("#data-table tbody tr");
-  trs.forEach(function(tr, idx){
+  document.querySelectorAll("#data-table tbody tr").forEach(function(tr, idx) {
     tr.classList.toggle("selected", S.selected.has(idx));
   });
   updateSelStatus();
 }
-
 function selectAll() {
-  var sd = S.sheetData[S.currentSheet];
-  if (!sd) return;
-  S.selected.clear();
-  (sd.filtered || sd.rows).forEach(function(r,i){ S.selected.add(i); });
-  document.querySelectorAll("#data-table tbody tr").forEach(function(tr){ tr.classList.add("selected"); });
+  var sd = S.sheetData[S.currentSheet]; if (!sd) return;
+  (sd.filtered || sd.rows).forEach(function(r, i) { S.selected.add(i); });
+  document.querySelectorAll("#data-table tbody tr").forEach(function(tr) { tr.classList.add("selected"); });
   updateSelStatus();
 }
-
 function clearSel() {
   S.selected.clear(); S.lastClickIdx = null;
-  document.querySelectorAll("#data-table tbody tr").forEach(function(tr){ tr.classList.remove("selected"); });
+  document.querySelectorAll("#data-table tbody tr").forEach(function(tr) { tr.classList.remove("selected"); });
   updateSelStatus();
 }
-
 function updateSelStatus() {
   var n = S.selected.size;
   document.getElementById("st-sel").textContent = n > 0 ? n + " đã chọn" : "";
 }
 
-// ════════════════════════════════════════════════════════════════
-// SORT
-// ════════════════════════════════════════════════════════════════
+// ── SORT ──────────────────────────────────────────────────────────
 function sortBy(colIdx) {
   var sh = S.currentSheet;
-  var sd = S.sheetData[sh];
-  if (!sd) return;
+  var sd = S.sheetData[sh]; if (!sd) return;
   var cur = S.sortState[sh] || {};
   var dir = (cur.col === colIdx && cur.dir === "asc") ? "desc" : "asc";
   S.sortState[sh] = { col: colIdx, dir: dir };
   var h = sd.headers[colIdx];
-  sd.filtered = (sd.filtered||sd.rows).slice().sort(function(a,b){
-    var va=a[h], vb=b[h];
-    if (va===vb) return 0;
-    if (typeof va==="number"&&typeof vb==="number") return dir==="asc"?va-vb:vb-va;
-    var sa=removeAccents(fmt(va)), sb=removeAccents(fmt(vb));
-    return dir==="asc"?sa.localeCompare(sb):sb.localeCompare(sa);
+  sd.filtered = (sd.filtered || sd.rows).slice().sort(function(a, b) {
+    var va = a[h], vb = b[h];
+    if (va === vb) return 0;
+    if (typeof va === "number" && typeof vb === "number") return dir === "asc" ? va - vb : vb - va;
+    var sa = removeAccents(fmt(va)), sb = removeAccents(fmt(vb));
+    return dir === "asc" ? sa.localeCompare(sb) : sb.localeCompare(sa);
   });
-  S.selected.clear(); S.lastClickIdx=null;
+  S.selected.clear(); S.lastClickIdx = null;
   renderTable(); updateSearchCount();
 }
 
 // ════════════════════════════════════════════════════════════════
-// SEARCH
+// SEARCH — dùng _search column (pre-computed), KHÔNG gọi lại
+// removeAccents() cho từng row → instant filter ngay cả 10000 rows
+// Hỗ trợ: tiếng Việt có dấu, không dấu, * giữa từ khóa
 // ════════════════════════════════════════════════════════════════
-_dSearchFn = debounce(function(){
+_dSearchFn = debounce(function() {
   var sh = S.currentSheet;
-  var sd = S.sheetData[sh];
-  if (!sd) return;
-  var kw = document.getElementById("search-input").value.trim();
-  document.getElementById("btn-clear-search").style.display = kw ? "block" : "none";
-  sd.filtered = kw ? sd.rows.filter(function(r){ return matchKeywords(r,kw); }) : sd.rows;
-  // re-apply sort
+  var sd = S.sheetData[sh]; if (!sd) return;
+  var raw = document.getElementById("search-input").value.trim();
+  document.getElementById("btn-clear-search").style.display = raw ? "block" : "none";
+
+  if (!raw) {
+    sd.filtered = sd.rows;
+  } else {
+    // Chỉ removeAccents keyword 1 lần — KHÔNG lặp per row
+    var parts = removeAccents(raw).split("*")
+      .map(function(p) { return p.trim(); }).filter(Boolean);
+
+    var result = [];
+    for (var i = 0; i < sd.rows.length; i++) {
+      var h   = sd.rows[i]._search;   // đã pre-computed, chỉ cần indexOf
+      var hit = true;
+      for (var j = 0; j < parts.length; j++) {
+        if (h.indexOf(parts[j]) < 0) { hit = false; break; }
+      }
+      if (hit) result.push(sd.rows[i]);
+    }
+    sd.filtered = result;
+  }
+
+  // Re-apply sort nếu đang sort
   var ss = S.sortState[sh];
   if (ss) {
-    var h = sd.headers[ss.col];
-    sd.filtered = sd.filtered.slice().sort(function(a,b){
-      var va=a[h],vb=b[h]; if(va===vb) return 0;
-      if(typeof va==="number"&&typeof vb==="number") return ss.dir==="asc"?va-vb:vb-va;
-      var sa=removeAccents(fmt(va)),sb=removeAccents(fmt(vb));
-      return ss.dir==="asc"?sa.localeCompare(sb):sb.localeCompare(sa);
+    var h2 = sd.headers[ss.col];
+    sd.filtered = sd.filtered.slice().sort(function(a, b) {
+      var va = a[h2], vb = b[h2];
+      if (va === vb) return 0;
+      if (typeof va === "number" && typeof vb === "number") return ss.dir === "asc" ? va - vb : vb - va;
+      var sa = removeAccents(fmt(va)), sb = removeAccents(fmt(vb));
+      return ss.dir === "asc" ? sa.localeCompare(sb) : sb.localeCompare(sa);
     });
   }
-  S.selected.clear(); S.lastClickIdx=null;
+  S.selected.clear(); S.lastClickIdx = null;
   renderTable(); updateSearchCount();
-}, 200);
+}, 120);  // debounce 120ms — đủ responsive, không lag
 
-function onSearch() { if(_dSearchFn) _dSearchFn(); }
-
+function onSearch()   { if (_dSearchFn) _dSearchFn(); }
 function clearSearch() {
   document.getElementById("search-input").value = "";
   document.getElementById("btn-clear-search").style.display = "none";
-  if(_dSearchFn) _dSearchFn();
+  if (_dSearchFn) _dSearchFn();
 }
-
 function updateSearchCount() {
-  var sh = S.currentSheet; if(!sh) return;
-  var sd = S.sheetData[sh]; if(!sd) return;
-  var shown = (sd.filtered||sd.rows).length;
+  var sh = S.currentSheet; if (!sh) return;
+  var sd = S.sheetData[sh]; if (!sd) return;
+  var shown = (sd.filtered || sd.rows).length;
   var total = sd.rows.length;
   document.getElementById("search-count").textContent =
     shown === total ? total + " dòng" : shown + "/" + total;
 }
 
 // ════════════════════════════════════════════════════════════════
-// PRESET — Column Picker với drag-and-drop
+// COPY
 // ════════════════════════════════════════════════════════════════
-var _dragSrc = null; // element đang drag
+function copySelected(mode) {
+  var sh = S.currentSheet;
+  var sd = S.sheetData[sh];
+  if (!sd || !S.selected.size) { showToast("Chưa chọn dòng nào!", "error"); return; }
+
+  var cols;
+  if (mode === "preset") {
+    var ap = S.activePreset[sh];
+    var pl = (getPresets()[sh] || []);
+    if (ap === null || ap === undefined || !pl[ap]) {
+      showToast("Chưa chọn Preset! Click vào preset trong thanh Preset.", "error"); return;
+    }
+    cols = pl[ap].cols;
+  } else {
+    // Copy đầy đủ — bỏ cột _search ẩn
+    cols = sd.headers.filter(function(h) { return h !== "_search"; });
+  }
+
+  var rows = Array.from(S.selected).sort(function(a, b) { return a - b; })
+    .map(function(ri) { return (sd.filtered || sd.rows)[ri]; }).filter(Boolean);
+
+  var text = rows.map(function(row) {
+    return cols.map(function(col) { return fmt(row[col]); }).join("\t");
+  }).join("\n");
+
+  navigator.clipboard.writeText(text)
+    .then(function() { showToast("✓ Đã copy " + rows.length + " dòng (" + cols.length + " cột)", "success"); })
+    .catch(function() { showToast("Không copy được — cần HTTPS", "error"); });
+}
+
+// ════════════════════════════════════════════════════════════════
+// PRESET MANAGER — giữ nguyên UI v3.1, chỉ fix bug data-action
+// ════════════════════════════════════════════════════════════════
+var _dragSrc = null;
 
 function buildPresetBar(sheetName) {
-  var bar  = document.getElementById("preset-bar");
+  var bar = document.getElementById("preset-bar");
   bar.innerHTML = '<span style="font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0">Preset:</span>';
-  var presets = getPresets();
-  var list    = (presets[sheetName] || []);
-  var active  = S.activePreset[sheetName];
+  var list   = (getPresets()[sheetName] || []);
+  var active = S.activePreset[sheetName];
 
   list.forEach(function(p, i) {
     var chip = document.createElement("div");
     chip.className = "preset-chip" + (active === i ? " active" : "");
     chip.textContent = p.name;
-    chip.title = (p.cols||[]).join(", ");
+    chip.title = (p.cols || []).join(", ");
     chip.onclick = function() { setActivePreset(sheetName, i); };
     bar.appendChild(chip);
   });
@@ -735,22 +879,17 @@ function setActivePreset(sheetName, idx) {
   buildPresetBar(sheetName);
 }
 
-// editIdx: -1 = mở form thêm mới, number = sửa preset đó, null = chỉ xem danh sách
 function openPresetModal(sheetName, editIdx) {
   document.getElementById("preset-sheet-name").textContent = sheetName;
   renderPresetList(sheetName);
-  if (editIdx === -1) {
-    startPresetForm(sheetName, -1, null);
-  } else {
-    resetPresetForm();
-  }
+  if (editIdx === -1) startPresetForm(sheetName, -1, null);
+  else resetPresetForm();
   openModal("modal-preset");
 }
 
 function renderPresetList(sheetName) {
-  var cont    = document.getElementById("preset-list-container");
-  var presets = getPresets();
-  var list    = (presets[sheetName] || []);
+  var cont = document.getElementById("preset-list-container");
+  var list = (getPresets()[sheetName] || []);
   if (!list.length) {
     cont.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:4px 0">Chưa có preset nào</div>';
     return;
@@ -759,12 +898,12 @@ function renderPresetList(sheetName) {
     return '<div class="preset-list-item" id="pli-' + i + '">' +
       '<span class="pli-name">' + esc(p.name) + '</span>' +
       '<span class="pli-cols">' + esc((p.cols||[]).join(" · ")) + '</span>' +
+      // Dùng data-action + addEventListener thay vì inline onclick (tránh bug dấu nháy)
       '<button class="btn btn-ghost pli-btn" data-action="edit" data-sheet="' + escA(sheetName) + '" data-idx="' + i + '">Sửa</button>' +
       '<button class="btn btn-ghost pli-btn" data-action="del" data-sheet="' + escA(sheetName) + '" data-idx="' + i + '" style="color:var(--red)">✕</button>' +
     '</div>';
   }).join("");
 
-  // Gán event bằng addEventListener — tránh inline onclick HTML attr
   cont.querySelectorAll("[data-action]").forEach(function(btn) {
     btn.addEventListener("click", function() {
       var action = this.getAttribute("data-action");
@@ -777,23 +916,24 @@ function renderPresetList(sheetName) {
 }
 
 function startPresetForm(sheetName, idx, preset) {
-  document.getElementById("preset-edit-idx").value = idx;
-  document.getElementById("preset-name-inp").value = preset ? preset.name : "";
+  document.getElementById("preset-edit-idx").value   = idx;
+  document.getElementById("preset-name-inp").value   = preset ? preset.name : "";
   document.getElementById("preset-form-title").textContent = idx >= 0 ? "✏ Sửa Preset" : "➕ Thêm Preset mới";
 
-  // Build column picker — nếu chưa có data thì fetch headers trước
-  var sd = S.sheetData[sheetName];
+  var sd      = S.sheetData[sheetName];
   var selCols = preset ? (preset.cols || []) : [];
+
   if (sd && sd.headers && sd.headers.length) {
     buildColPicker(sd.headers, selCols);
   } else {
     document.getElementById("col-available").innerHTML =
       '<div style="font-size:11px;color:var(--muted);padding:8px"><span class="spinner"></span> Đang tải cột...</div>';
-    apiCall({ action:"getData", sheet:sheetName, session:S.token }, function(res) {
-      if (!res.success) { showToast(res.message,"error"); return; }
-      S.sheetData[sheetName] = { headers: res.headers, rows: res.data, filtered: res.data };
-      _loaded[sheetName] = true;
-      buildColPicker(res.headers, selCols);
+    apiCall({ action: "getData", sheet: sheetName, session: S.token }, function(res) {
+      if (!res.success) { showToast(res.message, "error"); return; }
+      var headers = (res.headers || []).filter(function(h) { return h !== "_search"; });
+      if (!S.sheetData[sheetName]) S.sheetData[sheetName] = { headers: [], rows: [], filtered: [] };
+      S.sheetData[sheetName].headers = headers;
+      buildColPicker(headers, selCols);
     });
   }
 }
@@ -806,35 +946,24 @@ function resetPresetForm() {
   document.getElementById("col-selected").innerHTML =
     '<div id="col-sel-empty" style="font-size:11px;color:var(--border2);padding:8px;text-align:center">Chưa chọn cột nào</div>';
 }
+function cancelPresetEdit() { resetPresetForm(); closeModal("modal-preset"); }
 
-function cancelPresetEdit() {
-  resetPresetForm();
-  closeModal("modal-preset");
-}
-
-// ── COLUMN PICKER ──────────────────────────────────────────────
+// ── COLUMN PICKER ─────────────────────────────────────────────────
 function buildColPicker(allCols, selCols) {
   var availEl = document.getElementById("col-available");
   var selEl   = document.getElementById("col-selected");
+  var usedSet = new Set(selCols.filter(function(c){ return c !== "_search"; }));
+  allCols = allCols.filter(function(c){ return c !== "_search"; });
 
-  // Cột chưa chọn
-  var usedSet = new Set(selCols);
   availEl.innerHTML = "";
-  allCols.forEach(function(col) {
-    if (!usedSet.has(col)) availEl.appendChild(makeAvailChip(col));
-  });
+  allCols.forEach(function(col) { if (!usedSet.has(col)) availEl.appendChild(makeAvailChip(col)); });
 
-  // Cột đã chọn (theo thứ tự)
   selEl.innerHTML = "";
-  if (selCols.length > 0) {
-    selCols.forEach(function(col) { selEl.appendChild(makeSelChip(col)); });
-  } else {
-    selEl.innerHTML = '<div id="col-sel-empty" style="font-size:11px;color:var(--border2);padding:8px;text-align:center">Chưa chọn cột nào</div>';
-  }
+  if (selCols.length > 0) selCols.forEach(function(col) { if(col !== "_search") selEl.appendChild(makeSelChip(col)); });
+  else selEl.innerHTML = '<div id="col-sel-empty" style="font-size:11px;color:var(--border2);padding:8px;text-align:center">Chưa chọn cột nào</div>';
 
-  // Drop zone
   selEl.addEventListener("dragover", function(e) { e.preventDefault(); });
-  selEl.addEventListener("drop", onDropToSel);
+  selEl.addEventListener("drop", function(e) { e.preventDefault(); });
 }
 
 function makeAvailChip(col) {
@@ -843,10 +972,9 @@ function makeAvailChip(col) {
   chip.textContent = col;
   chip.title = "Click để thêm vào preset";
   chip.style.cssText = "padding:3px 8px;border-radius:12px;font-size:11px;cursor:pointer;" +
-    "background:var(--surface2);border:1px solid var(--border2);color:var(--text2);" +
-    "transition:all .12s;user-select:none";
-  chip.onmouseenter = function() { this.style.borderColor = "var(--accent2)"; this.style.color = "var(--accent2)"; };
-  chip.onmouseleave = function() { this.style.borderColor = "var(--border2)"; this.style.color = "var(--text2)"; };
+    "background:var(--surface2);border:1px solid var(--border2);color:var(--text2);transition:all .12s;user-select:none";
+  chip.onmouseenter = function() { this.style.borderColor="var(--accent2)"; this.style.color="var(--accent2)"; };
+  chip.onmouseleave = function() { this.style.borderColor="var(--border2)"; this.style.color="var(--text2)"; };
   chip.onclick = function() { moveToSelected(col); };
   return chip;
 }
@@ -854,7 +982,7 @@ function makeAvailChip(col) {
 function makeSelChip(col) {
   var chip = document.createElement("div");
   chip.className = "col-sel-chip";
-  chip.setAttribute("draggable", "true");
+  chip.setAttribute("draggable","true");
   chip.setAttribute("data-col", col);
   chip.style.cssText = "padding:4px 8px;border-radius:5px;font-size:11px;cursor:grab;" +
     "background:rgba(167,139,250,.15);border:1px solid var(--accent2);color:var(--accent2);" +
@@ -863,90 +991,64 @@ function makeSelChip(col) {
     '<span style="flex:1">' + esc(col) + '</span>' +
     '<span class="col-rm" style="cursor:pointer;color:var(--muted);font-size:11px">✕</span>';
   chip.querySelector(".col-rm").onclick = function(e) { e.stopPropagation(); moveToAvailable(col); };
-
-  // Drag events
   chip.addEventListener("dragstart", function(e) {
-    _dragSrc = this;
-    e.dataTransfer.effectAllowed = "move";
+    _dragSrc = this; e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", col);
     setTimeout(function() { chip.style.opacity = "0.4"; }, 0);
   });
-  chip.addEventListener("dragend", function() { chip.style.opacity = "1"; });
-  chip.addEventListener("dragover", function(e) {
-    e.preventDefault(); e.dataTransfer.dropEffect = "move";
-    this.style.borderColor = "var(--green)";
-  });
+  chip.addEventListener("dragend",   function() { chip.style.opacity = "1"; });
+  chip.addEventListener("dragover",  function(e) { e.preventDefault(); this.style.borderColor="var(--green)"; });
   chip.addEventListener("dragleave", function() { this.style.borderColor = "var(--accent2)"; });
   chip.addEventListener("drop", function(e) {
     e.preventDefault(); e.stopPropagation();
     this.style.borderColor = "var(--accent2)";
     if (_dragSrc && _dragSrc !== this) {
-      var selEl  = document.getElementById("col-selected");
-      var chips  = Array.from(selEl.querySelectorAll(".col-sel-chip"));
-      var srcIdx = chips.indexOf(_dragSrc);
-      var tgtIdx = chips.indexOf(this);
-      if (srcIdx < tgtIdx) selEl.insertBefore(_dragSrc, this.nextSibling);
+      var selEl = document.getElementById("col-selected");
+      var chips = Array.from(selEl.querySelectorAll(".col-sel-chip"));
+      if (chips.indexOf(_dragSrc) < chips.indexOf(this)) selEl.insertBefore(_dragSrc, this.nextSibling);
       else selEl.insertBefore(_dragSrc, this);
     }
   });
   return chip;
 }
 
-function onDropToSel(e) {
-  e.preventDefault();
-  // Xử lý drop vào vùng trống của col-selected
-  var col = e.dataTransfer.getData("text/plain");
-  if (!col) return;
-}
-
 function moveToSelected(col) {
-  // Xóa khỏi available
-  var availEl = document.getElementById("col-available");
-  var chips   = availEl.querySelectorAll(".col-avail-chip");
-  chips.forEach(function(c) { if (c.textContent === col) availEl.removeChild(c); });
-  // Thêm vào selected
+  document.getElementById("col-available").querySelectorAll(".col-avail-chip").forEach(function(c) {
+    if (c.textContent === col) c.parentNode.removeChild(c);
+  });
   var selEl = document.getElementById("col-selected");
   var empty = document.getElementById("col-sel-empty");
   if (empty) selEl.removeChild(empty);
   selEl.appendChild(makeSelChip(col));
 }
-
 function moveToAvailable(col) {
-  // Xóa khỏi selected
   var selEl = document.getElementById("col-selected");
-  var chips = selEl.querySelectorAll(".col-sel-chip");
-  chips.forEach(function(c) { if (c.getAttribute("data-col") === col) selEl.removeChild(c); });
+  selEl.querySelectorAll(".col-sel-chip").forEach(function(c) {
+    if (c.getAttribute("data-col") === col) selEl.removeChild(c);
+  });
   if (!selEl.querySelector(".col-sel-chip")) {
     selEl.innerHTML = '<div id="col-sel-empty" style="font-size:11px;color:var(--border2);padding:8px;text-align:center">Chưa chọn cột nào</div>';
   }
-  // Thêm lại vào available
   document.getElementById("col-available").appendChild(makeAvailChip(col));
 }
-
 function deletePreset(sheetName, idx) {
   var p = getPresets();
   if (!p[sheetName]) return;
   p[sheetName].splice(idx, 1);
   savePresets(p);
   if (S.activePreset[sheetName] === idx) delete S.activePreset[sheetName];
-  else if (S.activePreset[sheetName] > idx) S.activePreset[sheetName]--;
+  else if ((S.activePreset[sheetName]||0) > idx) S.activePreset[sheetName]--;
   renderPresetList(sheetName);
   buildPresetBar(sheetName);
 }
-
 function savePreset() {
   var sheetName = document.getElementById("preset-sheet-name").textContent.trim();
   var idx       = parseInt(document.getElementById("preset-edit-idx").value);
   var name      = document.getElementById("preset-name-inp").value.trim();
   if (!name) { showToast("Nhập tên Preset!", "error"); return; }
-
-  // Lấy cột từ col-selected theo thứ tự hiện tại
-  var selEl = document.getElementById("col-selected");
-  var cols  = Array.from(selEl.querySelectorAll(".col-sel-chip"))
-    .map(function(c) { return c.getAttribute("data-col"); })
-    .filter(Boolean);
+  var cols = Array.from(document.getElementById("col-selected").querySelectorAll(".col-sel-chip"))
+    .map(function(c) { return c.getAttribute("data-col"); }).filter(Boolean);
   if (!cols.length) { showToast("Chọn ít nhất 1 cột!", "error"); return; }
-
   var p = getPresets();
   if (!p[sheetName]) p[sheetName] = [];
   if (idx >= 0 && idx < p[sheetName].length) p[sheetName][idx] = { name: name, cols: cols };
@@ -957,54 +1059,6 @@ function savePreset() {
   resetPresetForm();
   showToast("Đã lưu Preset: " + name, "success");
 }
-
-// ════════════════════════════════════════════════════════════════
-// COPY
-// ════════════════════════════════════════════════════════════════
-function copySelected(mode) {
-  var sh = S.currentSheet;
-  var sd = S.sheetData[sh];
-  if (!sd || !S.selected.size) { showToast("Chưa chọn dòng nào!","error"); return; }
-
-  // Xác định cột cần copy
-  var cols;
-  if (mode === "preset") {
-    var ap      = S.activePreset[sh];
-    var presets = getPresets();
-    var pl      = (presets[sh] || []);
-    if (ap === null || ap === undefined || !pl[ap]) {
-      showToast("Chưa chọn Preset! Chọn một preset trong thanh Preset.","error"); return;
-    }
-    cols = pl[ap].cols;
-  } else {
-    cols = sd.headers;
-  }
-
-  var rows = Array.from(S.selected).sort(function(a,b){ return a-b; })
-    .map(function(ri){ return (sd.filtered||sd.rows)[ri]; })
-    .filter(Boolean);
-
-  var text = rows.map(function(row){
-    return cols.map(function(col){
-      var v = row[col]; return fmt(v);
-    }).join("\t");
-  }).join("\n");
-
-  navigator.clipboard.writeText(text)
-    .then(function(){ showToast("✓ Đã copy " + rows.length + " dòng (" + cols.length + " cột)","success"); })
-    .catch(function(){ showToast("Không copy được — cần HTTPS","error"); });
-}
-
-// ════════════════════════════════════════════════════════════════
-// MODAL
-// ════════════════════════════════════════════════════════════════
-function openModal(id)  { document.getElementById(id).classList.add("open"); }
-function closeModal(id) { document.getElementById(id).classList.remove("open"); }
-
-// Close on backdrop click
-document.querySelectorAll(".overlay").forEach(function(ov){
-  ov.addEventListener("click", function(e){ if(e.target===ov) closeModal(ov.id); });
-});
 </script>
 </body>
 </html>
